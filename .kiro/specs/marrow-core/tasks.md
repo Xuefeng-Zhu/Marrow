@@ -20,7 +20,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Keeps typecheck, test and build green. Requirements: R4.
 
 - [ ] 4. Movement spec schema
-  - `src/spec/schema.ts` (zod schemas, `MovementSpec`), `src/spec/parse.ts` (`parseMovementSpec` with path-based issues, cross-reference and hysteresis checks, `normHysteresis`, per-rule `hysteresis`, the same-metric phase reachability check and the form-rule clearable-margin check).
+  - `src/spec/schema.ts` (zod schemas, `MovementSpec`), `src/spec/parse.ts` (`parseMovementSpec` with path-based issues, cross-reference and hysteresis checks, `normHysteresis`, per-rule `hysteresis`, the same-metric phase reachability check (including first-match shadowing by earlier phases) and the form-rule clearable-margin check).
   - Add the example spec `packages/marrow-core/specs/elbow-cycle.json` and a test that validates every file in `specs/`.
   - Tests: unit cases for each rejection rule (including two phases with the same range on one metric) plus P20, P21 and P24.
   - Add `zod` to the core dependencies.
@@ -34,7 +34,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
 - [ ] 6. Engine: phases, hysteresis and reps
   - `src/engine/engine.ts` with `createEngine`, `push`, `reset`, typed events `phase` and `rep`, `minRepMs`, per-metric-kind hysteresis, and the retention-wins rule.
   - Add `src/testing/sequences.ts` (frame and value sequence generators shared by tests, exported only for tests, not from the public entry).
-  - Tests: unit cases plus P11 to P14, P16, P17, with P13 and P14 noise bounded as in R10.
+  - Tests: unit cases plus P11 to P14, P16, P17, with P13 and P14 noise bounded as in R10 and P14 using transition witnesses, not midpoints.
   - Keeps typecheck, test and build green. Requirements: R6, R6a, R6b.
 
 - [ ] 7. Engine: holds, form warnings, ROM sampling
