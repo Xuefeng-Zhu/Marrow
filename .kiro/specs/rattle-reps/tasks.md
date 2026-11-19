@@ -38,7 +38,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: examples plus fast-check P23 to P29 with generated circuits and random action sequences, and P30 for presets against the registry.
   - Keeps typecheck, test and build green. Requirements: R2.2, R10.1 to R10.7, R10.10; properties P23 to P30.
 
-- [ ] 7. Storage codec and store
+- [x] 7. Storage codec and store
   - Add `idb-keyval` as a dependency and `fake-indexeddb` as a dev dependency of `apps/rattle-reps`, and commit the updated `package-lock.json`.
   - Add `src/storage/codec.ts` (versioned records, hand-written validation, `appendHistory` with the 500 cap) and `src/storage/store.ts` (idb-keyval store, in-memory fallback, serialized writes, `clearAll`).
   - Tests: P32 and P33 as properties, store round trip with `fake-indexeddb`, fallback when idb throws, unknown version ignored but not overwritten, `clearAll`, settings default to muted.
