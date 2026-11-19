@@ -1,0 +1,17 @@
+.counter {
+  text-align: center;
+}
+
+.number {
+  font-size: var(--display-size);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--pumpkin);
+  text-shadow: 0 0 24px rgb(255 138 31 / 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.goal {
+  color: var(--muted);
+  font-size: var(--text-lg);
+}

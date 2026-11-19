@@ -36,6 +36,8 @@ export interface UseSession {
 export function useSession(options: UseSessionOptions): UseSession {
   const [view, setView] = useState<LiveView>(INITIAL_VIEW);
   const controller = useRef<SessionController | null>(null);
+  /** Frame listeners live here, so a child can subscribe before the controller exists. */
+  const frameListeners = useRef(new Set<(f: ProcessedFrame) => void>());
   const latest = useRef(options);
   latest.current = options;
   const { workout, mode, target } = options;
@@ -53,6 +55,9 @@ export function useSession(options: UseSessionOptions): UseSession {
       onEnd: (r) => latest.current.onEnd?.(r),
     });
     controller.current = c;
+    c.onFrame((f) => {
+      for (const fn of [...frameListeners.current]) fn(f);
+    });
     void c.start();
     return () => {
       c.dispose();
@@ -65,6 +70,11 @@ export function useSession(options: UseSessionOptions): UseSession {
     pause: useCallback(() => controller.current?.pause(), []),
     resume: useCallback(() => controller.current?.resume(), []),
     stop: useCallback(() => controller.current?.stop(), []),
-    onFrame: useCallback((fn) => controller.current?.onFrame(fn) ?? (() => undefined), []),
+    onFrame: useCallback((fn) => {
+      frameListeners.current.add(fn);
+      return () => {
+        frameListeners.current.delete(fn);
+      };
+    }, []),
   };
 }

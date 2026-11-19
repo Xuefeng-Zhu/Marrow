@@ -25,6 +25,22 @@ const startWorkout: ScreenAction[] = [
   { type: 'chooseMode', mode: 'demo' },
 ];
 
+describe('skipStep', () => {
+  const start: ScreenAction[] = [{ type: 'pickCircuit', id: 'spooky-starter' }, { type: 'chooseMode', mode: 'demo' }];
+
+  it('moves to the next step of a circuit without a summary', () => {
+    const s = run([...start, { type: 'skipStep' }]);
+    expect(s).toMatchObject({ name: 'session', run: { seq: { phase: 'work', index: 1 } } });
+  });
+
+  it('ends at the circuit summary after the last step and is ignored outside a circuit', () => {
+    const s = run([...start, { type: 'skipStep' }, { type: 'skipStep' }, { type: 'skipStep' }]);
+    expect(s).toMatchObject({ name: 'circuitSummary', run: { seq: { phase: 'done' } } });
+    const w = run(startWorkout);
+    expect(screenReducer(w, { type: 'skipStep' })).toBe(w);
+  });
+});
+
 describe('screenReducer examples', () => {
   it('goes picker, mode, session, summary', () => {
     const s = run([...startWorkout, { type: 'setEnded', summary: summary('squat'), saved: true }]);
@@ -111,5 +127,31 @@ describe('P31 screen reducer', () => {
         }
       }),
     );
+  });
+});
+
+describe('stale and skipped results', () => {
+  const start: ScreenAction[] = [{ type: 'pickCircuit', id: 'spooky-starter' }, { type: 'chooseMode', mode: 'demo' }];
+
+  it('ignores a result that belongs to a previous step', () => {
+    const first = run(start);
+    if (first.name !== 'session') throw new Error('expected a session');
+    const second = screenReducer(first, { type: 'skipStep', run: first.run });
+    expect(second).toMatchObject({ name: 'session', run: { seq: { index: 1 } } });
+    // The slow save of step one finishes after the skip.
+    expect(screenReducer(second, { type: 'setEnded', run: first.run, summary: summary('squat') })).toBe(second);
+    expect(screenReducer(second, { type: 'skipStep', run: first.run })).toBe(second);
+  });
+
+  it('accepts a result of the current run', () => {
+    const first = run(start);
+    if (first.name !== 'session') throw new Error('expected a session');
+    expect(screenReducer(first, { type: 'setEnded', run: first.run, summary: summary('squat') }).name).toBe('summary');
+  });
+
+  it('keeps the partial set of a skipped step', () => {
+    const s = run([...start, { type: 'skipStep', summary: summary('squat') }]);
+    if (s.name !== 'session') throw new Error('expected a session');
+    expect(s.run.seq?.results[0]?.summary).toMatchObject({ movementId: 'squat', reps: 5 });
   });
 });

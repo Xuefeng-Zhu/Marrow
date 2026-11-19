@@ -1,165 +1,224 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  createMediaPipeSource,
-  createPipeline,
-  drawSkeleton,
-  type Frame,
-  type Landmark,
-  type PoseSource,
-  type SkeletonStyle,
-} from 'marrow-core';
+import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { getCircuit } from './circuits/presets';
+import type { CreateSourceOptions, SessionSource } from './session/sourceFactory';
+import { computeStreak } from './streak/streak';
+import { History } from './ui/History';
+import { localDayKey, recordSet } from './session/recordSet';
+import type { SessionResult } from './session/sessionController';
+import { CircuitSummary } from './ui/CircuitSummary';
+import { Summary } from './ui/Summary';
 import { getWorkout } from './movements/registry';
-import styles from './App.module.css';
+import { currentMovementId, INITIAL_SCREEN, screenReducer, type Run } from './session/screenReducer';
+import { createRattleStore, type Store } from './storage/store';
+import { Layout } from './ui/Layout';
+import { Mode } from './ui/Mode';
+import { Picker } from './ui/Picker';
+import { SettingsProvider, useSettings } from './ui/Settings';
 
-type Mode = 'demo' | 'camera';
+/** The live session pulls in the pipeline, so it is its own chunk (R21.4). */
+const Session = lazy(() => import('./ui/Session'));
 
-const WIDTH = 640;
-const HEIGHT = 480;
-
-const spec = getWorkout('squat')!.spec;
-
-/** Temporary stand-in for the demo clip until task 18 wires App to the session controller and fixtures: a figure that bobs up and down at 20 fps. */
-function createStubSource(): PoseSource {
-  const frameListeners = new Set<(f: Frame) => void>();
-  let timer: ReturnType<typeof setInterval> | undefined;
-  let t = 0;
-  const frame = (ms: number): Frame => {
-    const bob = 0.05 * Math.sin(ms / 400);
-    const p = (x: number, y: number): Landmark => ({ x, y, z: 0, visibility: 0.99 });
-    const landmarks = Array.from({ length: 33 }, () => p(0.5, 0.12 + bob));
-    landmarks[11] = p(0.4, 0.2 + bob);
-    landmarks[12] = p(0.6, 0.2 + bob);
-    landmarks[13] = p(0.35, 0.4 + bob);
-    landmarks[14] = p(0.65, 0.4 + bob);
-    landmarks[15] = p(0.35, 0.58 + bob);
-    landmarks[16] = p(0.65, 0.58 + bob);
-    landmarks[23] = p(0.42, 0.6 + bob);
-    landmarks[24] = p(0.58, 0.6 + bob);
-    landmarks[25] = p(0.42, 0.78);
-    landmarks[26] = p(0.58, 0.78);
-    landmarks[27] = p(0.42, 0.95);
-    landmarks[28] = p(0.58, 0.95);
-    return { t: ms, landmarks };
-  };
-  return {
-    async start() {
-      if (timer !== undefined) return;
-      timer = setInterval(() => {
-        const f = frame(t);
-        t += 50;
-        for (const fn of [...frameListeners]) fn(f);
-      }, 50);
-    },
-    stop() {
-      if (timer !== undefined) clearInterval(timer);
-      timer = undefined;
-      t = 0;
-    },
-    onFrame(fn) {
-      frameListeners.add(fn);
-      return () => frameListeners.delete(fn);
-    },
-    onPoseLost: () => () => false,
-    onError: () => () => false,
-  };
+function stepIndex(run: Run): number {
+  return run.seq && run.seq.phase !== 'done' ? run.seq.index : 0;
 }
 
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export interface AppProps {
+  /** Replaces the browser storage (tests). */
+  store?: Store;
+  /** Replaces the real pose source (tests). */
+  createSource?: (o: CreateSourceOptions) => Promise<SessionSource>;
 }
 
-function cssVar(name: string, fallback: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-}
-
-export function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mode, setMode] = useState<Mode>('demo');
-  const [playing, setPlaying] = useState(() => !prefersReducedMotion());
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d') ?? null;
-    ctx?.clearRect(0, 0, WIDTH, HEIGHT);
-    if (!playing) return;
-
-    const source: PoseSource =
-      mode === 'camera' ? createMediaPipeSource() : createStubSource();
-    const pipeline = createPipeline({ source, spec });
-    const style: SkeletonStyle = {
-      boneColor: cssVar('--bone', '#ffffff'),
-      jointColor: cssVar('--joint', '#ffffff'),
-      lineWidth: 4,
-      jointRadius: 5,
-    };
-    source.onError((e) => {
-      setError(e.message);
-      setPlaying(false);
-    });
-    source.onPoseLost(() => ctx?.clearRect(0, 0, WIDTH, HEIGHT));
-    pipeline.onFrame(({ frame }) => {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-      drawSkeleton(ctx, frame, style);
-    });
-    setError(null);
-    void pipeline.start();
-    return () => pipeline.stop();
-  }, [mode, playing]);
-
-  function choose(next: Mode): void {
-    if (next === mode) return;
-    setError(null);
-    setMode(next);
-    setPlaying(next === 'camera' || !prefersReducedMotion());
-  }
-
+export function App({ store, createSource }: AppProps = {}) {
+  const [own] = useState<Store>(() => store ?? createRattleStore());
   return (
-    <main className={styles.app}>
-      <h1 className={styles.title}>Rattle Reps</h1>
-      <p className={styles.tagline}>Hello skeleton: your bones, rattling along.</p>
-
-      <div className={styles.stage}>
-        <canvas
-          ref={canvasRef}
-          width={WIDTH}
-          height={HEIGHT}
-          className={`${styles.canvas} ${mode === 'camera' ? styles.mirror : ''}`}
-          role="img"
-          aria-label="Skeleton overlay drawn from pose landmarks"
-        />
-      </div>
-
-      <div className={styles.controls}>
-        <fieldset className={styles.group}>
-          <legend className={styles.hidden}>Pose source</legend>
-          <button type="button" className={styles.button} aria-pressed={mode === 'demo'} onClick={() => choose('demo')}>
-            Demo clip
-          </button>
-          <button
-            type="button"
-            className={styles.button}
-            aria-pressed={mode === 'camera'}
-            onClick={() => choose('camera')}
-          >
-            Camera
-          </button>
-        </fieldset>
-        <button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => setPlaying(!playing)}>
-          {playing ? 'Pause' : 'Play'}
-        </button>
-      </div>
-
-      {error && (
-        <p role="alert" className={styles.error}>
-          {error}
-        </p>
-      )}
-
-      <p className={styles.privacy}>
-        Everything runs on your device. No video is uploaded and no landmarks leave your browser.
-      </p>
-    </main>
+    <SettingsProvider store={own}>
+      <Screens store={own} createSource={createSource} />
+    </SettingsProvider>
   );
+}
+
+function Screens({
+  store,
+  createSource,
+}: {
+  store: Store;
+  createSource?: AppProps['createSource'];
+}) {
+  const [screen, dispatch] = useReducer(screenReducer, INITIAL_SCREEN);
+  const { settings, sound } = useSettings();
+  /** After a camera failure the same run continues with the demo clip. */
+  const [demoFallback, setDemoFallback] = useState(false);
+
+  const streakWeeks = useRef(0);
+  const nextId = useRef(0);
+  /** Mode of the set that just ended, which can differ from the run after a camera failure. */
+  const lastMode = useRef<'camera' | 'demo'>('demo');
+
+  // The demo fallback ends when the session screen is left, not when the set ends. Clearing it
+  // earlier would remount the session on the failed camera path while the result is being saved.
+  useEffect(() => {
+    if (screen.name !== 'session') setDemoFallback(false);
+  }, [screen.name]);
+
+  const save = useCallback(
+    async (result: SessionResult, run: Run, mode: 'camera' | 'demo') => {
+      const { summary, startT, stopT } = result;
+      const startedAt = Date.now() - Math.max(0, stopT - startT);
+      const id = `${startedAt}-${nextId.current++}`;
+      const recorded = await recordSet(
+        store,
+        {
+          summary,
+          mode,
+          circuitId: run.choice.kind === 'circuit' ? run.choice.id : undefined,
+          startedAt,
+          offsetMinutes: -new Date(startedAt).getTimezoneOffset(),
+        },
+        id,
+      );
+      return recorded;
+    },
+    [store],
+  );
+
+  const onEnd = useCallback(
+    async (result: SessionResult, run: Run, mode: 'camera' | 'demo') => {
+      lastMode.current = mode;
+      const recorded = await save(result, run, mode);
+      streakWeeks.current = recorded.streakWeeks;
+      // `run` ties the result to its own step: a result that arrives after the step was left is dropped.
+      dispatch({ type: 'setEnded', run, summary: result.summary, saved: recorded.saved, streakGain: recorded.streakGain });
+    },
+    [save],
+  );
+
+  /** Skip step keeps the reps done so far. */
+  const onSkip = useCallback(
+    async (run: Run, mode: 'camera' | 'demo', partial?: SessionResult) => {
+      const keep = partial && (partial.summary.reps > 0 || partial.summary.holdMs > 0) ? partial : undefined;
+      if (keep) await save(keep, run, mode);
+      setDemoFallback(false);
+      dispatch({ type: 'skipStep', run, summary: keep?.summary });
+    },
+    [save],
+  );
+
+  const [streakBadge, setStreakBadge] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (screen.name !== 'picker') return;
+    let alive = true;
+    store.loadHistory().then(
+      (list) => {
+        if (!alive) return;
+        const { current } = computeStreak(list, localDayKey(Date.now()));
+        setStreakBadge(current > 0 ? `Weekly streak: ${current} ${current === 1 ? 'week' : 'weeks'}` : undefined);
+      },
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [screen.name, store]);
+
+  const homeButton = (
+    <button type="button" className="btn" onClick={() => dispatch({ type: 'home' })}>
+      Home
+    </button>
+  );
+
+  switch (screen.name) {
+    case 'picker':
+      return (
+        <Picker
+          onPickWorkout={(id) => dispatch({ type: 'pickWorkout', id })}
+          onPickCircuit={(id) => dispatch({ type: 'pickCircuit', id })}
+          onOpenHistory={() => dispatch({ type: 'openHistory' })}
+          streakBadge={streakBadge}
+        />
+      );
+    case 'mode':
+      return (
+        <Mode
+          choice={screen.choice}
+          onChoose={(mode) => {
+            // Restored sound has no AudioContext yet. This click is the gesture that may create it.
+            if (settings.sound) sound.unlock();
+            dispatch({ type: 'chooseMode', mode });
+          }}
+          onBack={() => dispatch({ type: 'back' })}
+        />
+      );
+    case 'session': {
+      const { run } = screen;
+      const workout = getWorkout(currentMovementId(run) ?? '');
+      if (!workout) return <Layout title="Something went wrong">{homeButton}</Layout>;
+      const mode = demoFallback ? 'demo' : run.mode;
+      return (
+        <Suspense fallback={<Layout title="Loading">{null}</Layout>}>
+          <Session
+            key={`${workout.id}-${mode}-${stepIndex(run)}`}
+            workout={workout}
+            mode={mode}
+            target={run.target}
+            onEnd={(result) => void onEnd(result, run, mode)}
+            onSkipStep={run.choice.kind === 'circuit' ? (partial) => void onSkip(run, mode, partial) : undefined}
+            onHome={() => {
+              dispatch({ type: 'home' });
+            }}
+            createSource={createSource}
+            onUseDemo={() => setDemoFallback(true)}
+          />
+        </Suspense>
+      );
+    }
+    case 'summary': {
+      const { run, summary } = screen;
+      const circuit = run.choice.kind === 'circuit' ? getCircuit(run.choice.id) : undefined;
+      const seq = run.seq;
+      const nextStep = seq && seq.phase === 'rest' ? circuit?.steps[seq.index + 1] : undefined;
+      const rest =
+        seq && seq.phase === 'rest' && circuit && nextStep
+          ? {
+              restSec: circuit.steps[seq.index]?.restSec ?? 0,
+              nextName: getWorkout(nextStep.movementId)?.name ?? nextStep.movementId,
+              onSkip: () => dispatch({ type: 'next' }),
+              onDone: () => dispatch({ type: 'next' }),
+            }
+          : undefined;
+      return (
+        <Summary
+          summary={summary}
+          mode={lastMode.current}
+          saved={screen.saved}
+          streakGain={screen.streakGain}
+          streakWeeks={streakWeeks.current}
+          persistent={store.persistent}
+          inCircuit={run.choice.kind === 'circuit'}
+          rest={rest}
+          circuitDone={seq?.phase === 'done'}
+          onAgain={() => dispatch({ type: 'again' })}
+          onNext={() => dispatch({ type: 'next' })}
+          onHome={() => dispatch({ type: 'home' })}
+        />
+      );
+    }
+    case 'circuitSummary':
+      return (
+        <CircuitSummary
+          circuitId={screen.run.choice.id}
+          results={screen.run.seq?.results ?? []}
+          onHome={() => dispatch({ type: 'home' })}
+        />
+      );
+    case 'history':
+      return (
+        <History
+          store={store}
+          today={localDayKey(Date.now())}
+          onStart={() => dispatch({ type: 'back' })}
+          onBack={() => dispatch({ type: 'back' })}
+        />
+      );
+  }
 }

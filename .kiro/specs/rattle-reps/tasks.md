@@ -55,53 +55,53 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests with a scripted fake `PoseSource`: counter equals the last `rep` count, set ends at the target, stop closes an open hold, unmount stops the pipeline and removes listeners, camera error exposes the demo fallback, camera pause drops frames and keeps `t` increasing (add a property: for any pause pattern, output `t` is strictly increasing and no `durationMs` includes paused time), a camera pause during an active hold with a real engine yields one `hold:end` with reason `lost-pose` on the first frame after resume even for a short pause and for normal frame spacing, with `durationMs` not including the pause, and a pause with no open hold leaves a one-frame gap and no `lost-pose`, a final shallow rep that reaches the target still gets its synthesized `shallow-depth` warning in the log and `cleanReps` excludes it (the set ends only after the `rom:sample`), demo pause with a fake clock delivers every fixture frame exactly once and in order, with the recorded `t`, for any pause pattern (including a pause longer than the remaining clip, which must not end the clip), and a demo hold open at pause continues after resume, demo mode never calls `getUserMedia`.
   - Keeps typecheck, test and build green. Requirements: R1.14, R3.2, R3.3, R3.6, R3.7, R3.10, R5.1 to R5.6, R9.5, R9.6, R14.6, R19.5.
 
-- [ ] 10. Theme tokens and base layout
+- [x] 10. Theme tokens and base layout
   - Replace `global.css` with the Halloween tokens, big-number type scale, focus ring, 44 px targets and the reduced-motion media query. Add `src/theme/tokens.ts`, `src/theme/useReducedMotion.ts` and a shared `Layout` (header, main, one `h1`).
   - Tests: WCAG contrast ratios for every text, background and focus pair (4.5:1 text, 3:1 large text and focus), `useReducedMotion` follows a mocked `matchMedia` change.
   - Keeps typecheck, test and build green. Requirements: R16.1 to R16.7, R18.1, R18.3, R19.1 to R19.3, R19.9.
 
-- [ ] 11. Picker and mode screens
+- [x] 11. Picker and mode screens
   - Add `ui/Picker.tsx` (workouts, preset circuits, streak badge placeholder, history link, privacy line) and `ui/Mode.tsx` (Camera and Demo clip, model download notice, camera placement tip, insecure-context handling, "not medical advice" line). Wire them into `App.tsx` with the screen reducer, focus management and document title.
   - Tests: lists all five workouts and the presets, activating an entry opens the mode screen, Demo clip does not touch `getUserMedia`, camera disabled with an explanation when `navigator.mediaDevices` is missing, focus moves to the `h1`.
   - Keeps typecheck, test and build green. Requirements: R2.1 to R2.7, R3.1, R14.4, R14.5, R15.1, R15.4, R21.6.
 
-- [ ] 12. Live session screen
+- [x] 12. Live session screen
   - Add `ui/Session.tsx`, `ui/Counter.tsx`, `ui/CueBar.tsx`, `ui/SkeletonCanvas.tsx` (rAF loop, `drawSkeleton`, tint, whole-figure rattle with a pure `rattleOffset`), the "Demo clip" label, the show-my-video toggle, Stop and Pause controls with Escape and Space shortcuts, and the pose-lost cue. Lazy-load the session screen with `React.lazy`.
   - Tests: counter and aria-live text, warning cue visibility and replacement, canvas `aria-hidden` with a text alternative, shortcuts work and are ignored in text inputs, rAF cancelled on unmount, `rattleOffset` is zero after 600 ms and always zero under reduced motion.
   - Keeps typecheck, test and build green. Requirements: R3.9, R5.1 to R5.7, R6.1 to R6.6, R8.1 to R8.7, R19.4 to R19.6, R21.4.
 
-- [ ] 13. Voice and sound
+- [x] 13. Voice and sound
   - Add `audio/voice.ts` and `audio/sound.ts` and `ui/Toggles.tsx`. Voice off by default, sound muted by default, `AudioContext` created only on the explicit unmute click, at most one queued warning utterance, speech cancelled on end or stop, toggles disabled with a reason when unsupported. Persist both through the settings store.
   - Tests: no `AudioContext` before unmute, rep triggers the rattle only while sound is on, warnings and every 5th rep are spoken only while voice is on, cancel on stop, unsupported browsers disable the toggle, toggles have accessible names and pressed state.
   - Keeps typecheck, test and build green. Requirements: R7.1 to R7.8, R19.7.
 
-- [ ] 14. Celebratory effects and reduced motion
+- [x] 14. Celebratory effects and reduced motion
   - Add `ui/Effects.tsx` (SVG and CSS bones and pumpkins, at most 2 s life, no focus or pointer capture, rate-limited by `shouldEmit`), the milestone, clean-set and streak triggers, and the text fallbacks.
   - Under reduced motion use static or fade-only effects, no rattle, and text badges.
   - Tests: an effect cleans itself up within 2 s (fake timers), no more than 3 effects start within any second, effects are `aria-hidden` and `pointer-events: none`, reduced motion removes movement classes and the text badge remains.
   - Keeps typecheck, test and build green. Requirements: R5.3, R8.5, R17.1 to R17.5, R18.1 to R18.4.
 
-- [ ] 15. Set summary and circuit flow
+- [x] 15. Set summary and circuit flow
   - Add `ui/Summary.tsx` and `ui/CircuitSummary.tsx`, the rest screen with countdown and "Skip rest", Again, Next and Home actions, the "No reps yet" state, and saving each completed set to history through the store with the streak before and after comparison. Wire `circuits/sequencer.ts` into the session flow.
   - Tests: summary values match `summarize`, zero-rep sets are not saved, demo sets are saved with `mode: "demo"` and do not extend the streak, a circuit runs all steps in order in demo mode with each step's own fixture, skip step and skip rest, leaving midway keeps completed sets, rest announcement happens at start and end only.
   - Keeps typecheck, test and build green. Requirements: R3.8, R9.1 to R9.11, R10.1 to R10.11, R11.8, R12.8.
 
-- [ ] 16. History and streak screen
+- [x] 16. History and streak screen
   - Add `ui/History.tsx` (list newest first, demo label, current and longest streak, this week's totals, empty state, "Clear all data" with confirmation, no-persistence notice) and show the live streak on the picker.
   - Tests: ordering and labels, empty state, totals computed from entries with a fixed "today", clear requires confirmation and empties storage, the screen does not import the session chunk (checked by a module graph test or by lazy boundary test), works with the in-memory fallback.
   - Keeps typecheck, test and build green. Requirements: R2.6, R11.4, R11.5, R12.4 to R12.8, R13.1 to R13.6.
 
-- [ ] 17. Accessibility pass and end-to-end keyboard tests
+- [x] 17. Accessibility pass and end-to-end keyboard tests
   - Audit and fix: landmarks, one `h1` per screen, focus order and focus on screen change, visible focus, 44 px targets (CSS check), live region politeness, no color-only information, `lang`, titles.
   - Add end-to-end style tests with `user-event` that drive picker, mode, a demo session (fake clock, scripted source), summary, history using only the keyboard.
   - Keeps typecheck, test and build green. Requirements: R14.4, R19.1 to R19.9, R6.3.
 
-- [ ] 18. Remove the stub and update docs
+- [x] 18. Remove the stub and update docs
   - Delete the remaining stub code in `App.tsx` and rewrite `App.test.tsx` to cover the app shell. Confirm there are no `marrow-core/fixtures` or `marrow-core/specs` imports left anywhere in the app.
   - Update the root `README.md` Rattle Reps section, add `apps/rattle-reps/README.md` (what it is, demo-clip mode, how to add a movement, how to regenerate fixtures with `npm run make-fixtures -w apps/rattle-reps`, privacy notes), and update `docs/architecture.md` with a pointer to this spec.
   - Keeps typecheck, test and build green. Requirements: R4.5, R20.1, R20.2, R20.5, R20.6.
 
-- [ ] 19. Final: production build ready for Vercel
+- [x] 19. Final: production build ready for Vercel
   - Run the full root checks from a clean install: `npm ci && npm run typecheck && npm test && npm run build`.
   - Verify `npm run build -w apps/rattle-reps` output in `apps/rattle-reps/dist` with `VITE_BASE` unset and with `VITE_BASE=/rattle-reps/`, served by `vite preview`, and check that assets resolve and demo mode runs for all five movements in both cases.
   - Confirm `vercel.json` keeps `outputDirectory: dist` and the SPA rewrite. Confirm the session and camera code are in separate lazy chunks from the picker and history, and record chunk sizes in the README.

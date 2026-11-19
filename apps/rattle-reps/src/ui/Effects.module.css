@@ -1,0 +1,81 @@
+.overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 45%;
+  height: 60%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.effect {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+  color: var(--pumpkin);
+}
+
+.milestone,
+.streak {
+  color: var(--toxic);
+}
+
+.clean-set {
+  color: var(--ghost);
+}
+
+.badge {
+  padding: 0.2rem 0.8rem;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: var(--bg);
+  font-weight: 900;
+  font-size: 1.25rem;
+}
+
+.particle {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  color: var(--bone);
+}
+
+.moving {
+  animation: fade 1.8s ease-out forwards;
+}
+
+.moving .particle {
+  animation: burst 1.6s ease-out forwards;
+}
+
+/* Under reduced motion there are no particles and no movement, only a short fade of the badge. */
+.still {
+  animation: fade 1.8s linear forwards;
+}
+
+@keyframes burst {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(200deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fade {
+  0% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

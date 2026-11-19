@@ -28,7 +28,9 @@ export type ScreenAction =
   | { type: 'pickWorkout'; id: string }
   | { type: 'pickCircuit'; id: string }
   | { type: 'chooseMode'; mode: Mode }
-  | { type: 'setEnded'; summary: SetSummary; saved?: boolean; streakGain?: boolean }
+  /** `run` is the run the result belongs to. A result of another run or step is stale and ignored. */
+  | { type: 'setEnded'; summary: SetSummary; saved?: boolean; streakGain?: boolean; run?: Run }
+  | { type: 'skipStep'; summary?: SetSummary; run?: Run }
   | { type: 'again' }
   | { type: 'next' }
   | { type: 'home' }
@@ -78,6 +80,7 @@ export function screenReducer(state: Screen, action: ScreenAction): Screen {
     }
     case 'setEnded': {
       if (state.name !== 'session') return state;
+      if (action.run && action.run !== state.run) return state;
       let run = state.run;
       if (run.choice.kind === 'circuit') {
         const circuit = getCircuit(run.choice.id);
@@ -91,6 +94,21 @@ export function screenReducer(state: Screen, action: ScreenAction): Screen {
         saved: action.saved ?? false,
         streakGain: action.streakGain ?? false,
       };
+    }
+    case 'skipStep': {
+      if (state.name !== 'session' || state.run.choice.kind !== 'circuit' || !state.run.seq) return state;
+      if (action.run && action.run !== state.run) return state;
+      const { run } = state;
+      const circuit = getCircuit(run.choice.id);
+      if (!circuit || !run.seq || run.seq.phase !== 'work') return state;
+      const skipped = step(circuit, run.seq, { type: 'skipStep', summary: action.summary });
+      if (skipped.phase === 'done') return { name: 'circuitSummary', run: { ...run, seq: skipped } };
+      // A skipped step has no result to show, so the rest is skipped with it.
+      const seq = step(circuit, skipped, { type: 'skipRest' });
+      const target = seq.phase === 'work' ? circuit.steps[seq.index]?.target : undefined;
+      // No target for the next step: end the circuit instead of ignoring the click.
+      if (!target) return { name: 'circuitSummary', run: { ...run, seq: { phase: 'done', results: skipped.results } } };
+      return { name: 'session', run: { ...run, seq, target } };
     }
     case 'again':
       return state.name === 'summary' && state.run.choice.kind === 'workout'
