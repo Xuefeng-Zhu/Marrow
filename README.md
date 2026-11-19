@@ -14,6 +14,22 @@ Kiroween 2026 · Skeleton Crew entry · built with [Kiro](https://kiro.dev).
 
 Both apps also ship a **demo clip mode**, so you can try them with no webcam.
 
+## Quick start
+
+Requires Node 22.
+
+```bash
+npm ci                            # install all workspaces
+npm run dev -w apps/rattle-reps   # or: npm run dev -w apps/steady
+npm run typecheck && npm test && npm run build
+```
+
+Each app opens in demo clip mode, so no camera is needed. Choose **Camera** to use your webcam. The browser asks for permission only then.
+
+Build an app for a sub-path with `VITE_BASE`, for example `VITE_BASE=/rattle-reps/ npm run build -w apps/rattle-reps`. The output is `apps/<app>/dist`. Each app has a `vercel.json` (SPA rewrite, output `dist`).
+
+More: [movement spec reference](docs/movement-spec.md), [architecture](docs/architecture.md), [core API](packages/marrow-core/README.md).
+
 ## Kiro
 
 `/.kiro` holds the steering, specs, hooks and MCP config used to build this repo. See `KIRO.md` (coming) for the write-up.

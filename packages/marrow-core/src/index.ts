@@ -24,8 +24,14 @@ export type { MarrowEvent, MarrowEventType } from './engine/events';
 export type { PoseSource, SourceError, SourceErrorCode } from './sources/types';
 export { createFixturePlayer, replay } from './sources/fixturePlayer';
 export type { Clock, FixturePlayerOptions } from './sources/fixturePlayer';
+export { createMediaPipeSource } from './sources/mediapipeSource';
+export type { MediaPipeSourceOptions } from './sources/mediapipeSource';
 export { FixtureError, FixtureSchema, parseFixture } from './fixtures/schema';
 export type { Fixture } from './fixtures/schema';
 
 export { createPipeline } from './pipeline';
 export type { Pipeline, PipelineOptions, ProcessedFrame } from './pipeline';
+
+export { POSE_CONNECTIONS } from './draw/connections';
+export { drawSkeleton } from './draw/drawSkeleton';
+export type { SkeletonStyle } from './draw/drawSkeleton';

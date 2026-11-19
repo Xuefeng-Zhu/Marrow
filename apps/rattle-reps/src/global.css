@@ -1,0 +1,21 @@
+:root {
+  --bg: #1b1030;
+  --surface: #2a1a4a;
+  --text: #fff7e6;
+  --muted: #cdbcf0;
+  --accent: #ff7a1a;
+  --accent-text: #1b1030;
+  --bone: #fff7e6;
+  --joint: #ff7a1a;
+  --radius: 14px;
+  --font-size: 1rem;
+  --font: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--font-size);
+}

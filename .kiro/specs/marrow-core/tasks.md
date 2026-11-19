@@ -53,27 +53,27 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: end-to-end test that the committed fixture and spec yield the expected events through the pipeline, with smoothing on and off, and a test with a stub source that fires `onPoseLost` during a hold and gets `hold:end` with `lost-pose`.
   - Keeps typecheck, test and build green. Requirements: R7.
 
-- [ ] 10. MediaPipe webcam source
+- [x] 10. MediaPipe webcam source
   - Add `@mediapipe/tasks-vision` as a core dependency. `src/sources/mediapipeSource.ts` with dynamic import, typed errors, `onPoseLost(t)` for frames without a pose, and options for model and WASM asset URLs.
   - Tests: with the MediaPipe module and `getUserMedia` mocked, cover start, stop, permission denied, model load failure, and no-pose frames (no `Frame` delivered, `onPoseLost` called with the frame's `t`). Add a test that importing the public entry does not load `@mediapipe/tasks-vision` eagerly.
   - Keeps typecheck, test and build green. Requirements: R2, R2a.
 
-- [ ] 11. Skeleton overlay helper
+- [x] 11. Skeleton overlay helper
   - `src/draw/connections.ts` and `src/draw/drawSkeleton.ts`.
   - Tests: with a fake canvas context, verify visibility skipping, empty frames and call counts.
   - Keeps typecheck, test and build green. Requirements: R8.
 
-- [ ] 12. Hello skeleton: apps/rattle-reps
+- [x] 12. Hello skeleton: apps/rattle-reps
   - Replace the `.gitkeep` with a Vite + React 18 + TypeScript app: `package.json` (depends on `marrow-core`), `vite.config.ts` honouring `VITE_BASE`, `index.html`, `src/main.tsx`, `src/App.tsx`, and a small CSS module with tokens.
   - Copy the core fixture into the app's public assets at build time through a Vite plugin or an npm script (do not deep-import core paths).
   - Add a Vitest + Testing Library smoke test: renders the canvas with an accessible name, defaults to demo mode, shows the on-device privacy text, and the mode toggle is keyboard operable.
   - Keeps typecheck, test and build green. Requirements: R9.
 
-- [ ] 13. Hello skeleton: apps/steady
+- [x] 13. Hello skeleton: apps/steady
   - Same as task 12 for `apps/steady`, with a different minimal token set (calm, high contrast, larger type).
   - Keeps typecheck, test and build green. Requirements: R9.
 
-- [ ] 14. Docs and CI check
+- [x] 14. Docs and CI check
   - Add `docs/movement-spec.md` (field reference generated from the worked example in design) and `docs/architecture.md` (short, links to the design). Update the root README quick start.
   - Confirm `.github/workflows/ci.yml` passes unchanged; no workflow edit unless a failure requires it.
   - Keeps typecheck, test and build green. Requirements: R1, R5.
