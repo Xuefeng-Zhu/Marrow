@@ -44,7 +44,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests with `fake-indexeddb/auto`: round trip, delete, clear, corrupt entries skipped, storage failure maps to `StorageUnavailableError`; fast-check P21 for the record guard and round trip.
   - Requirements: R10.1, R10.2, R10.7 (data side), R10.8 (data side). Property: P21.
 
-- [ ] 8. Reference context and result model
+- [x] 8. Reference context and result model
   - `src/reference.ts` with sourced entries, verified against the cited sources (omit any number that cannot be verified). `src/logic/result.ts` builds a view model from a finished run (value, unit, stop reason text, "Stopped early", source label, reference lines, the fixed non-diagnosis line).
   - Tests: no verdict words appear in any view model (R9.4); the non-diagnosis line is always present (R9.3); chair stand threshold depends on the age band (R9.5); `kneeFlexion` and rounding are applied (R5.5).
   - Requirements: R9.2 to R9.5.
