@@ -44,7 +44,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: P32 and P33 as properties, store round trip with `fake-indexeddb`, fallback when idb throws, unknown version ignored but not overwritten, `clearAll`, settings default to muted.
   - Keeps typecheck, test and build green. Requirements: R11.1 to R11.8, R7.8, R20.3; properties P32, P33.
 
-- [ ] 8. Screen reducer and cues
+- [x] 8. Screen reducer and cues
   - Add `src/session/screenReducer.ts` (pure screen state machine with circuit state held in the run), and `src/session/cues.ts` (`cueFor`, `nextCue` with 2 s minimum visibility, `shouldEmit` rate limiter, milestone rule).
   - Add `src/session/depthCheck.ts` (pure `withDepthWarnings(events, workoutId)`: adds one `shallow-depth` warning per shallow rep window from `rom:sample`, skipping windows where the core already warned) and extend the fixture replay test with the merged assertions (consecutive shallow reps give two warnings, `cleanReps` excludes both).
   - Tests: reducer examples and P31 (including `again` and circuit `next` from `summary` into `session`, and no other way into `session`), depthCheck examples (consecutive shallow reps alternating 105 and 170 degrees, a shallow rep after a clean one, no duplicate when the core warned) and a property that each rep window has at most one `shallow-depth` warning after merging, cue mapping for every event type, warning replacement and expiry, rate limiter never exceeds 3 per second.

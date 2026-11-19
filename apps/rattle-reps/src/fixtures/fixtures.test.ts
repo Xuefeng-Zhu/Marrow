@@ -13,6 +13,8 @@ import {
 import { describe, expect, it } from 'vitest';
 import { generateFixtures, serializeFixture } from '../../scripts/make-fixtures';
 import { getWorkout } from '../movements/registry';
+import { withDepthWarnings } from '../session/depthCheck';
+import { summarize } from '../summary/summarize';
 import { getFixture } from './index';
 
 const IDS = ['squat', 'push-up', 'lunge', 'jumping-jack', 'plank'] as const;
@@ -146,6 +148,34 @@ describe('squat and push-up depth', () => {
     expect(shallow).toHaveLength(1);
     expect(shallow[0]!.t).toBeGreaterThan(reps[3]!);
     expect(shallow[0]!.t).toBeLessThanOrEqual(reps[4]!);
+  });
+});
+
+describe('squat and push-up after depthCheck (R1.14)', () => {
+  it.each(['squat', 'push-up'])('%s: each of the two consecutive shallow reps gets a warning', (id) => {
+    const merged = withDepthWarnings(replayEvents(id), id);
+    const repTs = merged.filter((e) => e.type === 'rep').map((e) => e.t);
+    const shallow = merged.filter((e) => e.type === 'form:warning' && e.ruleId === 'shallow-depth');
+    expect(shallow).toHaveLength(2);
+    expect(shallow[0]!.t).toBeGreaterThan(repTs[3]!);
+    expect(shallow[0]!.t).toBeLessThanOrEqual(repTs[4]!);
+    expect(shallow[1]!.t).toBeGreaterThan(repTs[4]!);
+    expect(shallow[1]!.t).toBeLessThanOrEqual(repTs[5]!);
+
+    const summary = summarize({
+      workout: { id, kind: 'reps' },
+      events: merged,
+      startT: 0,
+      stopT: repTs[5]!,
+    });
+    expect(summary.reps).toBe(6);
+    expect(summary.cleanReps).toBe(3);
+    expect(summary.warnings.find((w) => w.ruleId === 'shallow-depth')?.count).toBe(2);
+  });
+
+  it.each(['lunge', 'jumping-jack', 'plank'])('%s: depthCheck leaves the events unchanged', (id) => {
+    const events = replayEvents(id);
+    expect(withDepthWarnings(events, id)).toEqual(events);
   });
 });
 
