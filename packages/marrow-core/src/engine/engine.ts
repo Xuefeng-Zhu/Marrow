@@ -51,8 +51,10 @@ export function createEngine(spec: MovementSpec): Engine {
   let romStates = freshRom();
   /** Latest frame t seen by push. */
   let lastT = -Infinity;
-  /** t of the latest valid frame (at least one metric is not NaN). */
-  let lastValidT: number | null = null;
+  /** Per hold: t of the latest frame where the metric of the hold's phase was not NaN. */
+  const holdMetric = holds.map((h) => phases.find((p) => p.id === h.phase)?.metric);
+  const freshValid = (): (number | null)[] => holds.map(() => null);
+  let holdValidT = freshValid();
 
   /** Emit `rom:sample` for every rom definition with this trigger, then clear its extremes. */
   function romTrigger(trigger: string, t: number, events: MarrowEvent[]): void {
@@ -83,11 +85,16 @@ export function createEngine(spec: MovementSpec): Engine {
     hs.active = false;
   }
 
-  /** Ends active holds when `t` is more than holdGapMs past the last valid frame. */
+  /**
+   * When `t` is more than holdGapMs past a hold's last valid frame, ends the hold if active
+   * (lost-pose) or discards its pending timer silently.
+   */
   function gapCheck(t: number, events: MarrowEvent[]): void {
-    if (lastValidT === null || t - lastValidT <= spec.holdGapMs) return;
     holds.forEach((_, i) => {
-      if (holdStates[i]!.active) endHold(i, t, lastValidT!, 'lost-pose', events);
+      const v = holdValidT[i]!;
+      if (v === null || t - v <= spec.holdGapMs) return;
+      if (holdStates[i]!.active) endHold(i, t, v, 'lost-pose', events);
+      else holdStates[i]!.condStart = null;
     });
   }
 
@@ -124,6 +131,7 @@ export function createEngine(spec: MovementSpec): Engine {
     const cur = current === null ? null : phases[current]!.id;
     holds.forEach((hold, i) => {
       const hs = holdStates[i]!;
+      if (holdValidT[i] !== t) return;
       if (cur !== hold.phase) {
         if (hs.condStart !== null) endHold(i, t, t, 'released', events);
         return;
@@ -203,8 +211,11 @@ export function createEngine(spec: MovementSpec): Engine {
       gapCheck(t, events);
       if (t > lastT) lastT = t;
       const values = evaluateMetrics(spec, frame);
+      holds.forEach((_, i) => {
+        const m = holdMetric[i];
+        if (m !== undefined && !Number.isNaN(values[m]!)) holdValidT[i] = t;
+      });
       if (Object.values(values).every((v) => Number.isNaN(v))) return events;
-      lastValidT = t;
       romDefs.forEach((def, i) => {
         const v = values[def.metric]!;
         if (Number.isNaN(v)) return;
@@ -232,7 +243,7 @@ export function createEngine(spec: MovementSpec): Engine {
       ruleStates = freshRules();
       romStates = freshRom();
       lastT = -Infinity;
-      lastValidT = null;
+      holdValidT = freshValid();
     },
     get repCount() {
       return repCount;

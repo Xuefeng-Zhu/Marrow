@@ -454,6 +454,69 @@ function formSpec(rule: Record<string, unknown>, phases?: string[]): MovementSpe
 }
 
 describe('holds (R6c)', () => {
+  it('discards a pending hold timer when the pose-loss gap expires', () => {
+    const engine = createEngine(holdSpec({ holdGapMs: 500 }));
+    expect(engine.push(angleFrame(0, 50)).filter((e) => e.type.startsWith('hold:'))).toEqual([]);
+    expect(engine.push(angleFrame(10000, 50)).filter((e) => e.type.startsWith('hold:'))).toEqual([]);
+    engine.push(angleFrame(10400, 50));
+    engine.push(angleFrame(10800, 50));
+    const ev = engine.push(angleFrame(11000, 50)).filter((e) => e.type.startsWith('hold:'));
+    expect(ev).toEqual([{ type: 'hold:start', t: 10000, holdId: 'bent-hold' }]);
+    const end = engine.push(angleFrame(11100, 150)).filter((e) => e.type === 'hold:end');
+    expect(end).toEqual([{ type: 'hold:end', t: 11100, holdId: 'bent-hold', durationMs: 1100, reason: 'released' }]);
+  });
+
+  it('P-pending: a pending hold never starts across a gap longer than holdGapMs', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 999 }), fc.integer({ min: 1, max: 5000 }), (first, extra) => {
+        const engine = createEngine(holdSpec({ holdGapMs: 500 }));
+        engine.push(angleFrame(0, 50));
+        const t = 500 + extra;
+        const ev = engine.push(angleFrame(t, 50));
+        expect(ev.some((e) => e.type.startsWith('hold:'))).toBe(false);
+        const later = engine.push(angleFrame(t + Math.min(first, 999), 50));
+        expect(later.some((e) => e.type === 'hold:start')).toBe(false);
+      }),
+      RUNS,
+    );
+  });
+
+  it('ignores holds whose phase metric is NaN while another metric stays valid', () => {
+    const spec = holdSpec({
+      holdGapMs: 500,
+      metrics: {
+        m0: { kind: 'angle', points: ['leftShoulder', 'leftElbow', 'leftWrist'] },
+        d: { kind: 'offset', points: ['leftElbow', 'leftShoulder'], axis: 'x' },
+      },
+    });
+    const engine = createEngine(spec);
+    const ev: MarrowEvent[] = [];
+    ev.push(...engine.push(offsetFrame(0, 0.1, 50)));
+    expect(engine.phase).toBe('bent');
+    for (let t = 100; t <= 5000; t += 100) {
+      const f = offsetFrame(t, 0.1, 50);
+      f.landmarks[LM.leftWrist] = { ...f.landmarks[LM.leftWrist]!, visibility: 0 };
+      ev.push(...engine.push(f));
+    }
+    expect(ev.filter((e) => e.type.startsWith('hold:'))).toEqual([]);
+  });
+
+  it('ends an active hold as lost-pose when only the phase metric is hidden', () => {
+    const spec = holdSpec({
+      holdGapMs: 500,
+      metrics: {
+        m0: { kind: 'angle', points: ['leftShoulder', 'leftElbow', 'leftWrist'] },
+        d: { kind: 'offset', points: ['leftElbow', 'leftShoulder'], axis: 'x' },
+      },
+    });
+    const engine = createEngine(spec);
+    for (let t = 0; t <= 1000; t += 100) engine.push(offsetFrame(t, 0.1, 50));
+    const hidden = offsetFrame(2000, 0.1, 50);
+    hidden.landmarks[LM.leftWrist] = { ...hidden.landmarks[LM.leftWrist]!, visibility: 0 };
+    const ev = engine.push(hidden).filter((e) => e.type.startsWith('hold:'));
+    expect(ev).toEqual([{ type: 'hold:end', t: 2000, holdId: 'bent-hold', durationMs: 1000, reason: 'lost-pose' }]);
+  });
+
   it('starts after minMs with the condition start time, ticks every tickMs, ends released', () => {
     const engine = createEngine(holdSpec());
     const ev: MarrowEvent[] = [];
@@ -743,7 +806,7 @@ describe('rom sampling (R6e)', () => {
   it('reset clears extremes, holds and latches', () => {
     const spec = holdSpec();
     const engine = createEngine(spec);
-    const frames = [angleFrame(0, 170), angleFrame(700, 50), angleFrame(1800, 50), angleFrame(2000, 170), angleFrame(2100, 50), angleFrame(2800, 170)];
+    const frames = [angleFrame(0, 170), angleFrame(700, 50), angleFrame(1200, 50), angleFrame(1500, 50), angleFrame(1800, 50), angleFrame(2000, 170), angleFrame(2100, 50), angleFrame(2800, 170)];
     const first = frames.flatMap((f) => engine.push(f));
     engine.reset();
     const second = frames.flatMap((f) => engine.push(f));
