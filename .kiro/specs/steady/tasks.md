@@ -74,7 +74,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: shows newest first; chart points equal `aggregateByDay` output; table matches the points; deleting asks for confirmation; empty state text; demo toggle filters records and labels demo rows.
   - Requirements: R10.3, R10.6, R10.7, R10.9, R15.8.
 
-- [ ] 14. Printable progress report
+- [x] 14. Printable progress report
   - `src/ui/Report.tsx` (date range, per test summary, asymmetry, chart and table, sources, disclaimer and privacy) and the full `src/print.css`. "Print or save as PDF" calls `window.print()`.
   - Tests: summaries match `summarize`; asymmetry shown only for same-day left and right pairs; no records message with print still available; `window.print` is called on click; `print.css` contains the hide, `break-inside: avoid` and black-on-white rules (lint-style check).
   - Requirements: R11, R12.3.

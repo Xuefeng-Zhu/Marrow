@@ -1,7 +1,89 @@
-/* Print rules are added with the report screen (task 14). */
+/* Print rules for the progress report (R11.4). Black on white, no chrome, no page breaks inside a section. */
+.print-only {
+  display: none;
+}
+
 @media print {
+  @page {
+    margin: 15mm;
+  }
+
+  html,
   body {
     background: #fff;
     color: #000;
+    font-size: 12pt;
+  }
+
+  /* Hide navigation, buttons, controls and the camera. The footer disclaimer and privacy lines stay. */
+  .no-print,
+  button,
+  input,
+  select,
+  video,
+  canvas,
+  header,
+  nav,
+  a[href^='#'] {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  main,
+  footer {
+    background: #fff;
+    color: #000;
+    border: 0;
+    box-shadow: none;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1,
+  h2 {
+    color: #000;
+    break-after: avoid;
+  }
+
+  .report-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0 0 12pt;
+  }
+
+  /* One page per test summary where possible. */
+  .report-section + .report-section {
+    break-before: auto;
+  }
+
+  svg {
+    color: #000;
+    max-width: 100%;
+  }
+
+  table {
+    border-collapse: collapse;
+    break-inside: avoid;
+  }
+
+  th,
+  td {
+    border: 1px solid #000;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Show link addresses only for sources. */
+  .references a[href]::after {
+    content: ' (' attr(href) ')';
+  }
+
+  .references a[href] {
+    color: #000;
+    text-decoration: none;
   }
 }

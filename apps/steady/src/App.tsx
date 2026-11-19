@@ -8,11 +8,12 @@ import { TEST_BY_ID } from './tests';
 import styles from './App.module.css';
 import { About } from './ui/About';
 import { Countdown } from './ui/Countdown';
+import { History } from './ui/History';
 import { Home } from './ui/Home';
+import { Report } from './ui/Report';
 import { ResultCard } from './ui/ResultCard';
 import { Run } from './ui/Run';
 import { Setup } from './ui/Setup';
-import { useHeadingFocus } from './ui/useHeadingFocus';
 
 /** Small skeleton mark: skull, spine and ribs. Decorative. */
 function SkeletonMark() {
@@ -33,22 +34,6 @@ function SkeletonMark() {
       <path d="M16 10v18" />
       <path d="M10 15q6 3 12 0M10 20q6 3 12 0M11 25q5 2 10 0" />
     </svg>
-  );
-}
-
-/** Placeholder for screens that arrive in a later task. */
-function Pending({ title, onBack }: { title: string; onBack: () => void }) {
-  const heading = useHeadingFocus();
-  return (
-    <>
-      <h1 ref={heading} tabIndex={-1}>
-        {title}
-      </h1>
-      <p>This screen is not available yet.</p>
-      <button type="button" className="btn" onClick={onBack}>
-        Back to tests
-      </button>
-    </>
   );
 }
 
@@ -138,10 +123,10 @@ export function App({ speech: injected }: AppProps = {}) {
       );
       break;
     case 'history':
-      screen = <Pending title="History" onBack={session.back} />;
+      screen = <History onBack={session.back} onReport={() => session.goto('report')} />;
       break;
     case 'report':
-      screen = <Pending title="Progress report" onBack={session.back} />;
+      screen = <Report onBack={session.back} />;
       break;
     default:
       screen = (
@@ -157,10 +142,10 @@ export function App({ speech: injected }: AppProps = {}) {
 
   return (
     <div className={styles.shell}>
-      <a className={styles.skip} href="#content">
+      <a className={`${styles.skip} no-print`} href="#content">
         Skip to main content
       </a>
-      <header className={styles.header}>
+      <header className={`${styles.header} no-print`}>
         <SkeletonMark />
         <p className={styles.brand}>Steady</p>
       </header>
