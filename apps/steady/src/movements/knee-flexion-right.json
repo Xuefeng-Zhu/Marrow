@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "id": "knee-flexion-right",
+  "name": "Knee flexion, right leg",
+  "minVisibility": 0.5,
+  "hysteresis": 8,
+  "minRepMs": 1500,
+  "metrics": {
+    "kneeAngle": {
+      "kind": "angle",
+      "points": [
+        "rightHip",
+        "rightKnee",
+        "rightAnkle"
+      ]
+    }
+  },
+  "phases": [
+    {
+      "id": "straight",
+      "metric": "kneeAngle",
+      "min": 150,
+      "max": 180
+    },
+    {
+      "id": "bent",
+      "metric": "kneeAngle",
+      "min": 20,
+      "max": 120
+    }
+  ],
+  "rom": [
+    {
+      "metric": "kneeAngle",
+      "sampleOn": "phase:straight"
+    }
+  ]
+}

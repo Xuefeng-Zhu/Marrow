@@ -31,7 +31,7 @@ Acceptance criteria:
 
 1. The app SHALL define seven tests, each with a JSON movement spec in `apps/steady/src/movements/`: `shoulder-flexion-left`, `shoulder-flexion-right`, `knee-flexion-left`, `knee-flexion-right`, `chair-stand`, `single-leg-stance-left`, `single-leg-stance-right`.
 2. Every spec file SHALL pass `parseMovementSpec` from `marrow-core`. A unit test SHALL validate every `*.json` file in the folder.
-3. The shoulder flexion specs SHALL measure the angle hip, shoulder, elbow of the chosen side. A raised arm gives a larger angle. The app SHALL report that angle as the flexion in degrees.
+3. The shoulder flexion specs SHALL measure the angle hip, shoulder, elbow of the chosen side in the image plane (the `shoulderAngle` metric sets `"plane": "xy"` explicitly, and a test checks it). A raised arm gives a larger angle. The app SHALL report that angle as the flexion in degrees.
 4. The knee flexion specs SHALL measure the angle hip, knee, ankle of the chosen side. The app SHALL report flexion as `180 - angle`, so a straight leg is 0 degrees.
 5. The chair stand spec SHALL use the knee or hip angle of one leg with the ordered phases `seated` then `standing`, so that one engine `rep` is one full sit, stand and sit cycle.
 6. The single-leg stance specs SHALL define a `lifted` phase (the raised foot is clearly off the floor, measured as an ankle height offset in torso units), a `grounded` phase, a hold in `lifted`, and a form rule on the standing leg's horizontal hip-to-ankle offset for sway.

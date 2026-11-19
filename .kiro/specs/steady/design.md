@@ -86,13 +86,13 @@ All specs use `minVisibility: 0.5`. Numbers below are starting values. The coder
 
 ### Shoulder flexion (left shown; right mirrors the landmark names)
 
-`shoulderAngle` is the angle at the shoulder between hip and elbow, `["leftHip","leftShoulder","leftElbow"]`, plane `xy`. An arm at the side reads near 0 and an arm overhead reads near 180. Because the camera sees the user from the side, the setup tells the user to turn so the tested arm faces the camera.
+`shoulderAngle` is the angle at the shoulder between hip and elbow, `["leftHip","leftShoulder","leftElbow"]`, with an explicit `"plane": "xy"` (the default is `xyz`, and the depth value from a single camera is too noisy for a side-on arm angle). An arm at the side reads near 0 and an arm overhead reads near 180. Because the camera sees the user from the side, the setup tells the user to turn so the tested arm faces the camera.
 
 ```json
 {
   "version": 1, "id": "shoulder-flexion-left", "name": "Shoulder flexion, left arm",
   "hysteresis": 8, "minRepMs": 1500,
-  "metrics": { "shoulderAngle": { "kind": "angle", "points": ["leftHip","leftShoulder","leftElbow"] } },
+  "metrics": { "shoulderAngle": { "kind": "angle", "points": ["leftHip","leftShoulder","leftElbow"], "plane": "xy" } },
   "phases": [
     { "id": "down",   "metric": "shoulderAngle", "min": 0,  "max": 30 },
     { "id": "raised", "metric": "shoulderAngle", "min": 90, "max": 180 }

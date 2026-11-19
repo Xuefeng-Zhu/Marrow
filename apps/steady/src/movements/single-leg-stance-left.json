@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "id": "single-leg-stance-left",
+  "name": "Single-leg stance, standing on the left leg",
+  "minVisibility": 0.5,
+  "hysteresis": 8,
+  "holdGapMs": 1000,
+  "metrics": {
+    "footLift": {
+      "kind": "offset",
+      "points": [
+        "rightAnkle",
+        "leftAnkle"
+      ],
+      "axis": "y"
+    },
+    "sway": {
+      "kind": "offset",
+      "points": [
+        "leftHip",
+        "leftAnkle"
+      ],
+      "axis": "x"
+    }
+  },
+  "phases": [
+    {
+      "id": "grounded",
+      "metric": "footLift",
+      "min": -0.1,
+      "max": 0.1
+    },
+    {
+      "id": "lifted",
+      "metric": "footLift",
+      "min": -1,
+      "max": -0.15
+    }
+  ],
+  "holds": [
+    {
+      "id": "stance",
+      "phase": "lifted",
+      "minMs": 500,
+      "tickMs": 250
+    }
+  ],
+  "formRules": [
+    {
+      "id": "sway-limit",
+      "metric": "sway",
+      "min": -0.25,
+      "max": 0.25,
+      "phases": [
+        "lifted"
+      ],
+      "debounceMs": 300,
+      "message": "Steady yourself"
+    }
+  ]
+}

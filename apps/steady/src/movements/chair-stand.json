@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "id": "chair-stand",
+  "name": "30-second chair stand",
+  "minVisibility": 0.5,
+  "hysteresis": 8,
+  "minRepMs": 800,
+  "metrics": {
+    "legAngle": {
+      "kind": "angle",
+      "points": [
+        "leftHip",
+        "leftKnee",
+        "leftAnkle"
+      ]
+    }
+  },
+  "phases": [
+    {
+      "id": "seated",
+      "metric": "legAngle",
+      "min": 60,
+      "max": 120
+    },
+    {
+      "id": "standing",
+      "metric": "legAngle",
+      "min": 155,
+      "max": 180
+    }
+  ]
+}

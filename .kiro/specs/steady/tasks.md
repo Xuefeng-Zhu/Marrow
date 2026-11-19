@@ -11,7 +11,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: update `src/App.test.tsx` (footer text present, skip link first in tab order, main landmark). Add `src/contrast.test.ts` that parses `global.css` tokens and checks the 7:1 and 4.5:1 pairs (R15.2).
   - Requirements: R12.1, R15.1, R15.2, R15.4, R16.
 
-- [ ] 2. Movement specs and test catalogue
+- [x] 2. Movement specs and test catalogue
   - Add the seven JSON specs in `src/movements/` (design, "Movement specs").
   - Add `src/tests.ts` with `TestDef` and the catalogue (specs, titles, summaries, units, limits, required landmarks, setup steps, prompt scripts). Clips are added in task 3, so use a typed `clip` field that is filled in then (keep the build green by adding the field in task 3).
   - Tests: `src/movements/specs.test.ts` runs `parseMovementSpec` on every `*.json` in the folder (via `import.meta.glob`) and checks that each catalogue entry maps to a valid spec and that catalogue ids equal the file names (R1.1, R1.2, R1.7). Add a test that no source file in `apps/steady/src` imports a deep `marrow-core` path (R1.8).
