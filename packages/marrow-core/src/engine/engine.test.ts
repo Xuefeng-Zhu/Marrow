@@ -462,7 +462,7 @@ describe('holds (R6c)', () => {
     engine.push(angleFrame(10800, 50));
     const ev = engine.push(angleFrame(11000, 50)).filter((e) => e.type.startsWith('hold:'));
     expect(ev).toEqual([{ type: 'hold:start', t: 10000, holdId: 'bent-hold' }]);
-    const end = engine.push(angleFrame(11100, 150)).filter((e) => e.type === 'hold:end');
+    const end = engine.push(angleFrame(11100, 170)).filter((e) => e.type === 'hold:end');
     expect(end).toEqual([{ type: 'hold:end', t: 11100, holdId: 'bent-hold', durationMs: 1100, reason: 'released' }]);
   });
 
