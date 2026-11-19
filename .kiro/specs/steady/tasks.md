@@ -79,7 +79,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: summaries match `summarize`; asymmetry shown only for same-day left and right pairs; no records message with print still available; `window.print` is called on click; `print.css` contains the hide, `break-inside: avoid` and black-on-white rules (lint-style check).
   - Requirements: R11, R12.3.
 
-- [ ] 15. Accessibility pass
+- [x] 15. Accessibility pass
   - Run `axe-core` on every screen in jsdom (colour-contrast rule off, covered by the token test). Fix findings. Check 48px target rules, 200% zoom layout (no fixed pixel widths), focus order, skip link and `lang` on `index.html`.
   - Tests: `src/a11y.test.tsx` with an axe helper over all screens; tab-order test for Home, Setup, Run and Result; CSS lint test for the reduced-motion block and the target size rule.
   - Requirements: R15, R16.
