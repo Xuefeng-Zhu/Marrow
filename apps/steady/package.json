@@ -8,7 +8,8 @@
     "dev": "vite",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "build": "vite build"
+    "build": "vite build",
+    "make-clips": "node --experimental-strip-types scripts/make-clips.ts"
   },
   "dependencies": {
     "idb-keyval": "^6.3.0",

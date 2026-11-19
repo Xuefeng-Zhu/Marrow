@@ -1,4 +1,11 @@
-import { parseMovementSpec, type LandmarkName, type MovementSpec } from 'marrow-core';
+import { parseFixture, parseMovementSpec, type Fixture, type LandmarkName, type MovementSpec } from 'marrow-core';
+import chairClip from './clips/chair-stand.json';
+import kneeLeftClip from './clips/knee-flexion-left.json';
+import kneeRightClip from './clips/knee-flexion-right.json';
+import shoulderLeftClip from './clips/shoulder-flexion-left.json';
+import shoulderRightClip from './clips/shoulder-flexion-right.json';
+import stanceLeftClip from './clips/single-leg-stance-left.json';
+import stanceRightClip from './clips/single-leg-stance-right.json';
 import chairStand from './movements/chair-stand.json';
 import kneeLeft from './movements/knee-flexion-left.json';
 import kneeRight from './movements/knee-flexion-right.json';
@@ -44,6 +51,8 @@ export interface TestDef {
   /** Which edge of a `rom:sample` carries the result. Knee flexion reads the minimum angle. */
   romEdge?: 'max' | 'min';
   spec: MovementSpec;
+  /** Synthetic demo clip, parsed with `parseFixture`. */
+  clip: Fixture;
   limitMs: number;
   requiredLandmarks: LandmarkName[];
   setup: string[];
@@ -61,7 +70,7 @@ const COMMON_SETUP = [
   'Wear clothes that let the camera see your joints. Make sure the room is well lit.',
 ];
 
-function shoulder(side: Side, spec: unknown): TestDef {
+function shoulder(side: Side, spec: unknown, clip: unknown): TestDef {
   return {
     id: `shoulder-flexion-${side}`,
     family: 'shoulder-flexion',
@@ -73,6 +82,7 @@ function shoulder(side: Side, spec: unknown): TestDef {
     metric: 'shoulderAngle',
     romEdge: 'max',
     spec: load(spec),
+    clip: parseFixture(clip),
     limitMs: 60000,
     requiredLandmarks: [`${side}Hip`, `${side}Shoulder`, `${side}Elbow`],
     setup: [
@@ -92,7 +102,7 @@ function shoulder(side: Side, spec: unknown): TestDef {
   };
 }
 
-function knee(side: Side, spec: unknown): TestDef {
+function knee(side: Side, spec: unknown, clip: unknown): TestDef {
   return {
     id: `knee-flexion-${side}`,
     family: 'knee-flexion',
@@ -104,6 +114,7 @@ function knee(side: Side, spec: unknown): TestDef {
     metric: 'kneeAngle',
     romEdge: 'min',
     spec: load(spec),
+    clip: parseFixture(clip),
     limitMs: 60000,
     requiredLandmarks: [`${side}Hip`, `${side}Knee`, `${side}Ankle`],
     setup: [
@@ -123,7 +134,7 @@ function knee(side: Side, spec: unknown): TestDef {
   };
 }
 
-function stance(side: Side, spec: unknown): TestDef {
+function stance(side: Side, spec: unknown, clip: unknown): TestDef {
   const other: Side = side === 'left' ? 'right' : 'left';
   return {
     id: `single-leg-stance-${side}`,
@@ -134,6 +145,7 @@ function stance(side: Side, spec: unknown): TestDef {
     kind: 'seconds',
     unit: 'seconds',
     spec: load(spec),
+    clip: parseFixture(clip),
     limitMs: 30000,
     requiredLandmarks: [`${side}Hip`, `${side}Ankle`, `${other}Ankle`, 'leftShoulder', 'rightShoulder', 'rightHip', 'leftHip'],
     setup: [
@@ -161,6 +173,7 @@ const chair: TestDef = {
   kind: 'count',
   unit: 'stands in 30 seconds',
   spec: load(chairStand),
+  clip: parseFixture(chairClip),
   limitMs: 30000,
   requiredLandmarks: ['leftHip', 'leftKnee', 'leftAnkle', 'leftShoulder', 'rightShoulder', 'rightHip'],
   setup: [
@@ -180,13 +193,13 @@ const chair: TestDef = {
 };
 
 export const TESTS: readonly TestDef[] = [
-  shoulder('left', shoulderLeft),
-  shoulder('right', shoulderRight),
-  knee('left', kneeLeft),
-  knee('right', kneeRight),
+  shoulder('left', shoulderLeft, shoulderLeftClip),
+  shoulder('right', shoulderRight, shoulderRightClip),
+  knee('left', kneeLeft, kneeLeftClip),
+  knee('right', kneeRight, kneeRightClip),
   chair,
-  stance('left', stanceLeft),
-  stance('right', stanceRight),
+  stance('left', stanceLeft, stanceLeftClip),
+  stance('right', stanceRight, stanceRightClip),
 ];
 
 export const TEST_BY_ID: Readonly<Record<TestId, TestDef>> = Object.fromEntries(

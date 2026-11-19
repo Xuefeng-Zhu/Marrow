@@ -17,7 +17,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: `src/movements/specs.test.ts` runs `parseMovementSpec` on every `*.json` in the folder (via `import.meta.glob`) and checks that each catalogue entry maps to a valid spec and that catalogue ids equal the file names (R1.1, R1.2, R1.7). Add a test that no source file in `apps/steady/src` imports a deep `marrow-core` path (R1.8).
   - Requirements: R1.
 
-- [ ] 3. Demo clip generator and clips
+- [x] 3. Demo clip generator and clips
   - Add `scripts/make-clips.ts` (pattern: `packages/marrow-core/scripts/make-fixture.ts`) that writes seven fixtures to `src/clips/`, with the designed outcomes from the design table exported from a small shared module the tests import. Add an npm script `make-clips`.
   - Commit the generated clips. Add the `clip` field to the catalogue entries.
   - Tests: every clip passes `parseFixture`; regenerating reproduces the committed files; replaying each clip through `createEngine` or `replay()` with the matching spec gives the designed events (rep counts, hold start and end times, sway warning time, `rom:sample` extremes), so the specs are tuned against the clips (R13.1, R13.2, R13.4).
