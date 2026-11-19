@@ -73,7 +73,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Same as task 12 for `apps/steady`, with a different minimal token set (calm, high contrast, larger type).
   - Keeps typecheck, test and build green. Requirements: R9.
 
-- [ ] 14. Docs and CI check
+- [x] 14. Docs and CI check
   - Add `docs/movement-spec.md` (field reference generated from the worked example in design) and `docs/architecture.md` (short, links to the design). Update the root README quick start.
   - Confirm `.github/workflows/ci.yml` passes unchanged; no workflow edit unless a failure requires it.
   - Keeps typecheck, test and build green. Requirements: R1, R5.
