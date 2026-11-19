@@ -70,7 +70,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: counter and aria-live text, warning cue visibility and replacement, canvas `aria-hidden` with a text alternative, shortcuts work and are ignored in text inputs, rAF cancelled on unmount, `rattleOffset` is zero after 600 ms and always zero under reduced motion.
   - Keeps typecheck, test and build green. Requirements: R3.9, R5.1 to R5.7, R6.1 to R6.6, R8.1 to R8.7, R19.4 to R19.6, R21.4.
 
-- [ ] 13. Voice and sound
+- [x] 13. Voice and sound
   - Add `audio/voice.ts` and `audio/sound.ts` and `ui/Toggles.tsx`. Voice off by default, sound muted by default, `AudioContext` created only on the explicit unmute click, at most one queued warning utterance, speech cancelled on end or stop, toggles disabled with a reason when unsupported. Persist both through the settings store.
   - Tests: no `AudioContext` before unmute, rep triggers the rattle only while sound is on, warnings and every 5th rep are spoken only while voice is on, cancel on stop, unsupported browsers disable the toggle, toggles have accessible names and pressed state.
   - Keeps typecheck, test and build green. Requirements: R7.1 to R7.8, R19.7.

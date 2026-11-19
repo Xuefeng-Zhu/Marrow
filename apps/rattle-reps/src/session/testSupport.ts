@@ -72,3 +72,17 @@ export class ScriptedSource implements PoseSource {
     return this.frameListeners.size + this.lostListeners.size + this.errorListeners.size;
   }
 }
+
+/** A settings store that keeps its values in memory and records writes. */
+export function memorySettingsStore(initial: Partial<{ voice: boolean; sound: boolean; showVideo: boolean }> = {}) {
+  let saved = { voice: false, sound: false, showVideo: false, ...initial };
+  const writes: (typeof saved)[] = [];
+  return {
+    writes,
+    loadSettings: async () => ({ ...saved }),
+    saveSettings: async (s: typeof saved) => {
+      saved = { ...s };
+      writes.push({ ...s });
+    },
+  };
+}

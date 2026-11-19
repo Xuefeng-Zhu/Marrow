@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Target, WorkoutDef } from '../movements/registry';
+import { isMilestone } from '../session/cues';
 import type { Mode } from '../session/screenReducer';
 import type { SessionResult } from '../session/sessionController';
 import type { CreateSourceOptions, SessionSource } from '../session/sourceFactory';
@@ -8,7 +9,9 @@ import { Counter, counterSentence } from './Counter';
 import { CueBar } from './CueBar';
 import { Layout } from './Layout';
 import styles from './Session.module.css';
+import { useSettings } from './Settings';
 import { SkeletonCanvas } from './SkeletonCanvas';
+import { Toggles } from './Toggles';
 
 export interface SessionProps {
   workout: WorkoutDef;
@@ -33,10 +36,40 @@ function ignoreShortcut(target: EventTarget | null, key: string): boolean {
 
 export default function Session({ workout, mode, target, onEnd, onHome, onUseDemo, createSource }: SessionProps) {
   const video = useRef<HTMLVideoElement>(null);
-  const [showVideo, setShowVideo] = useState(false);
+  const { settings, voice, sound, setShowVideo } = useSettings();
+  const showVideo = settings.showVideo;
   const session = useSession({ workout, mode, target, video, onEnd, createSource });
   const { view, pause, resume, stop } = session;
   const paused = view.status === 'paused';
+
+  // Sound and voice react to the live view. The latest settings are read through a ref, so turning a
+  // toggle does not replay old events.
+  const live = useRef({ settings, target });
+  live.current = { settings, target };
+  const lastReps = useRef(0);
+  useEffect(() => {
+    if (view.reps <= lastReps.current) return;
+    lastReps.current = view.reps;
+    const { settings: s, target: tg } = live.current;
+    if (s.sound) sound.rattle();
+    if (s.voice && isMilestone(view.reps, tg.kind === 'reps' ? tg.reps : undefined)) voice.speak(`${view.reps}`);
+  }, [view.reps, sound, voice]);
+
+  const lastCue = useRef<unknown>(null);
+  useEffect(() => {
+    const active = view.cue;
+    if (!active || active === lastCue.current) return;
+    lastCue.current = active;
+    if (active.cue.kind === 'warning' && live.current.settings.voice) {
+      voice.speak(active.cue.voice ?? active.cue.text);
+    }
+  }, [view.cue, voice]);
+
+  // Pending speech is cancelled when the set ends or is stopped (R7.7).
+  useEffect(() => () => voice.cancel(), [voice]);
+  useEffect(() => {
+    if (view.status === 'ended') voice.cancel();
+  }, [view.status, voice]);
 
   const togglePause = useCallback(() => (paused ? resume() : pause()), [paused, pause, resume]);
 
@@ -58,7 +91,7 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
     holdElapsedMs: view.holdElapsedMs,
     target,
   });
-  const lastCue = view.cue && view.cue.cue.kind !== 'rep' ? view.cue.cue.text : 'no cue yet';
+  const lastCueText = view.cue && view.cue.cue.kind !== 'rep' ? view.cue.cue.text : 'no cue yet';
   const active = view.status === 'running' || view.status === 'paused' || view.status === 'starting';
 
   return (
@@ -101,7 +134,7 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
           <Counter kind={workout.kind} reps={view.reps} holdElapsedMs={view.holdElapsedMs} target={target} />
           <CueBar cue={view.cue} poseLost={view.poseLost} status={view.status} />
           <p className="visually-hidden" data-testid="canvas-alt">
-            Skeleton overlay. {sentence}. Last cue: {lastCue}.
+            Skeleton overlay. {sentence}. Last cue: {lastCueText}.
           </p>
 
           <div className={styles.controls}>
@@ -116,12 +149,13 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
                 type="button"
                 className="btn"
                 aria-pressed={showVideo}
-                onClick={() => setShowVideo((v) => !v)}
+                onClick={() => setShowVideo(!showVideo)}
               >
                 Show my video
               </button>
             )}
           </div>
+          <Toggles />
           <p className={styles.hint}>
             Keyboard: <kbd>Esc</kbd> stops, <kbd>Space</kbd> pauses.
             {mode === 'camera' && workout.kind === 'hold' ? ' Pause ends the current hold.' : ''}

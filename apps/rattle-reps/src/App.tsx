@@ -1,9 +1,11 @@
 import { lazy, Suspense, useReducer, useState } from 'react';
 import { getWorkout } from './movements/registry';
 import { currentMovementId, INITIAL_SCREEN, screenReducer, type Run } from './session/screenReducer';
+import { createRattleStore, type Store } from './storage/store';
 import { Layout } from './ui/Layout';
 import { Mode } from './ui/Mode';
 import { Picker } from './ui/Picker';
+import { SettingsProvider } from './ui/Settings';
 
 /** The live session pulls in the pipeline, so it is its own chunk (R21.4). */
 const Session = lazy(() => import('./ui/Session'));
@@ -12,7 +14,21 @@ function stepIndex(run: Run): number {
   return run.seq && run.seq.phase !== 'done' ? run.seq.index : 0;
 }
 
-export function App() {
+export interface AppProps {
+  /** Replaces the browser storage (tests). */
+  store?: Store;
+}
+
+export function App({ store }: AppProps = {}) {
+  const [own] = useState<Store>(() => store ?? createRattleStore());
+  return (
+    <SettingsProvider store={own}>
+      <Screens />
+    </SettingsProvider>
+  );
+}
+
+function Screens() {
   const [screen, dispatch] = useReducer(screenReducer, INITIAL_SCREEN);
   /** After a camera failure the same run continues with the demo clip. */
   const [demoFallback, setDemoFallback] = useState(false);

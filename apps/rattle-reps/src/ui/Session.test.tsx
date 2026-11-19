@@ -6,7 +6,8 @@ import { getFixture } from '../fixtures';
 import { getWorkout } from '../movements/registry';
 import type { ActiveCue } from '../session/cues';
 import type { CreateSourceOptions } from '../session/sourceFactory';
-import { ScriptedSource } from '../session/testSupport';
+import { memorySettingsStore, ScriptedSource } from '../session/testSupport';
+import { SettingsProvider } from './Settings';
 import { CueBar } from './CueBar';
 import Session from './Session';
 import { RATTLE_MS, rattleOffset } from './SkeletonCanvas';
@@ -235,5 +236,64 @@ describe('rattleOffset', () => {
     const mag = (t: number) => Math.hypot(rattleOffset(t, 4).x, rattleOffset(t, 4).y);
     expect(mag(0)).toBeGreaterThan(5);
     expect(mag(500)).toBeLessThan(mag(0));
+  });
+});
+
+describe('voice and sound in the session', () => {
+  function withAudio(saved: { voice?: boolean; sound?: boolean }) {
+    const source = new ScriptedSource();
+    const workout = getWorkout('squat')!;
+    const voice = { supported: true, speak: vi.fn(), cancel: vi.fn() };
+    const sound = { supported: true, active: false, unlock: vi.fn(() => true), rattle: vi.fn(), close: vi.fn() };
+    const onEnd = vi.fn();
+    render(
+      <SettingsProvider store={memorySettingsStore(saved)} engines={{ voice, sound }}>
+        <Session
+          workout={workout}
+          mode="demo"
+          target={{ kind: 'reps', reps: 10 }}
+          onEnd={onEnd}
+          onHome={() => undefined}
+          createSource={async () => ({ source, pause: () => undefined, resume: () => undefined })}
+        />
+      </SettingsProvider>,
+    );
+    return { source, voice, sound, onEnd };
+  }
+
+  async function play(source: ScriptedSource) {
+    await started(source);
+    for (const frame of clip('squat')) act(() => source.emit(frame));
+  }
+
+  it('stays silent while sound and voice are off', async () => {
+    const { source, voice, sound } = withAudio({});
+    await play(source);
+    expect(sound.rattle).not.toHaveBeenCalled();
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('rattles on each rep while sound is on', async () => {
+    const { source, sound, voice } = withAudio({ sound: true });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Bone rattle sound/ }).getAttribute('aria-pressed')).toBe('true'));
+    await play(source);
+    expect(sound.rattle).toHaveBeenCalledTimes(6);
+    expect(voice.speak).not.toHaveBeenCalled();
+  });
+
+  it('speaks warnings and every 5th rep while voice is on, and cancels on stop', async () => {
+    const user = userEvent.setup();
+    const { source, voice, sound, onEnd } = withAudio({ voice: true });
+    await waitFor(() => expect(screen.getByRole('button', { name: /Voice cues/ }).getAttribute('aria-pressed')).toBe('true'));
+    await play(source);
+    const said = voice.speak.mock.calls.map((c) => c[0] as string);
+    expect(said).toContain('5');
+    expect(said).not.toContain('4');
+    expect(said.some((t) => /knees|deeper/i.test(t))).toBe(true);
+    expect(sound.rattle).not.toHaveBeenCalled();
+    voice.cancel.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(onEnd).toHaveBeenCalled();
+    expect(voice.cancel).toHaveBeenCalled();
   });
 });

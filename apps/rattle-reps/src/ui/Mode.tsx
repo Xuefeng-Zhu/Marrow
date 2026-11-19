@@ -5,6 +5,7 @@ import type { Choice, Mode as ModeId } from '../session/screenReducer';
 import { Layout } from './Layout';
 import styles from './Mode.module.css';
 import { PRIVACY_LINE } from './Picker';
+import { Toggles } from './Toggles';
 
 export interface ModeProps {
   choice: Choice;
@@ -80,6 +81,12 @@ export function Mode({ choice, onChoose, onBack, support }: ModeProps) {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="audio-h" className={styles.tips}>
+        <h2 id="audio-h">Voice and sound</h2>
+        <p className={styles.note}>Both start off. Sound plays a synthesized bone rattle on each rep.</p>
+        <Toggles />
       </section>
 
       <p className={styles.note}>Form hints, not medical advice. Stop if anything hurts.</p>
