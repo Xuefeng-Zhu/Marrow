@@ -2,7 +2,7 @@
 
 Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at the repo root (Node 22, as in CI). Each task is one small commit. Tests are written in the same task as the code they cover. Requirement and property numbers refer to `requirements.md`. Only `apps/rattle-reps` changes (plus `package-lock.json`, README and docs where a task says so). No task edits `packages/marrow-core` or `apps/steady`.
 
-- [ ] 1. Movement specs and registry
+- [x] 1. Movement specs and registry
   - Add `src/movements/{squat,push-up,lunge,jumping-jack,plank}.json` with the metrics, phases, holds and form rules from the design, including the `rom` entry sampled on `rep` for the squat and push-up depth metric.
   - Add `src/movements/registry.ts` (parse with `parseMovementSpec`, export `WORKOUTS` and `getWorkout`) and `src/movements/workouts.ts` (targets, phase cues, voice lines, blurbs, camera tips).
   - Confirm the `offset` sign convention in `packages/marrow-core/src/engine/metrics.ts` (read only) and note it in the test file.

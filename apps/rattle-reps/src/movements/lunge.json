@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "lunge",
+  "name": "Lunge",
+  "minVisibility": 0.5,
+  "hysteresis": 5,
+  "minRepMs": 700,
+  "metrics": {
+    "kneeAngle": { "kind": "angle", "points": ["leftHip", "leftKnee", "leftAnkle"] },
+    "kneeShift": { "kind": "offset", "points": ["leftKnee", "leftAnkle"], "axis": "x" },
+    "torsoLean": { "kind": "offset", "points": ["leftShoulder", "leftHip"], "axis": "x" }
+  },
+  "phases": [
+    { "id": "standing", "metric": "kneeAngle", "min": 150, "max": 180 },
+    { "id": "bottom", "metric": "kneeAngle", "min": 60, "max": 115 }
+  ],
+  "formRules": [
+    {
+      "id": "knee-past-ankle",
+      "metric": "kneeShift",
+      "max": 0.25,
+      "phases": ["bottom"],
+      "debounceMs": 300,
+      "message": "Keep knee over ankle"
+    },
+    {
+      "id": "torso-lean",
+      "metric": "torsoLean",
+      "max": 0.3,
+      "phases": ["bottom"],
+      "debounceMs": 300,
+      "message": "Stay tall"
+    }
+  ]
+}

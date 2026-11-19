@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "squat",
+  "name": "Squat",
+  "minVisibility": 0.5,
+  "hysteresis": 5,
+  "minRepMs": 700,
+  "metrics": {
+    "kneeAngle": { "kind": "angle", "points": ["leftHip", "leftKnee", "leftAnkle"] },
+    "kneeGap": { "kind": "distance", "points": ["leftKnee", "rightKnee"] }
+  },
+  "phases": [
+    { "id": "standing", "metric": "kneeAngle", "min": 150, "max": 180 },
+    { "id": "bottom", "metric": "kneeAngle", "min": 40, "max": 115 }
+  ],
+  "formRules": [
+    {
+      "id": "knees-caving",
+      "metric": "kneeGap",
+      "min": 0.35,
+      "phases": ["bottom"],
+      "debounceMs": 300,
+      "message": "Push your knees out"
+    },
+    {
+      "id": "shallow-depth",
+      "metric": "kneeAngle",
+      "max": 100,
+      "phases": ["bottom"],
+      "debounceMs": 300,
+      "message": "Sink a little deeper"
+    }
+  ],
+  "rom": [{ "metric": "kneeAngle", "sampleOn": "rep" }]
+}
