@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  createFixturePlayer,
   createMediaPipeSource,
   createPipeline,
   drawSkeleton,
-  parseFixture,
-  parseMovementSpec,
+  type Frame,
+  type Landmark,
   type PoseSource,
   type SkeletonStyle,
 } from 'marrow-core';
-import clipJson from 'marrow-core/fixtures/elbow-cycle-3reps.json';
-import specJson from 'marrow-core/specs/elbow-cycle.json';
+import { getWorkout } from './movements/registry';
 import styles from './App.module.css';
 
 type Mode = 'demo' | 'camera';
@@ -18,10 +16,53 @@ type Mode = 'demo' | 'camera';
 const WIDTH = 640;
 const HEIGHT = 480;
 
-const parsedSpec = parseMovementSpec(specJson);
-if (!parsedSpec.ok) throw new Error(parsedSpec.issues.map((i) => `${i.path}: ${i.message}`).join('\n'));
-const spec = parsedSpec.spec;
-const clip = parseFixture(clipJson);
+const spec = getWorkout('squat')!.spec;
+
+/** Temporary stand-in for the demo clip until task 18 wires App to the session controller and fixtures: a figure that bobs up and down at 20 fps. */
+function createStubSource(): PoseSource {
+  const frameListeners = new Set<(f: Frame) => void>();
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let t = 0;
+  const frame = (ms: number): Frame => {
+    const bob = 0.05 * Math.sin(ms / 400);
+    const p = (x: number, y: number): Landmark => ({ x, y, z: 0, visibility: 0.99 });
+    const landmarks = Array.from({ length: 33 }, () => p(0.5, 0.12 + bob));
+    landmarks[11] = p(0.4, 0.2 + bob);
+    landmarks[12] = p(0.6, 0.2 + bob);
+    landmarks[13] = p(0.35, 0.4 + bob);
+    landmarks[14] = p(0.65, 0.4 + bob);
+    landmarks[15] = p(0.35, 0.58 + bob);
+    landmarks[16] = p(0.65, 0.58 + bob);
+    landmarks[23] = p(0.42, 0.6 + bob);
+    landmarks[24] = p(0.58, 0.6 + bob);
+    landmarks[25] = p(0.42, 0.78);
+    landmarks[26] = p(0.58, 0.78);
+    landmarks[27] = p(0.42, 0.95);
+    landmarks[28] = p(0.58, 0.95);
+    return { t: ms, landmarks };
+  };
+  return {
+    async start() {
+      if (timer !== undefined) return;
+      timer = setInterval(() => {
+        const f = frame(t);
+        t += 50;
+        for (const fn of [...frameListeners]) fn(f);
+      }, 50);
+    },
+    stop() {
+      if (timer !== undefined) clearInterval(timer);
+      timer = undefined;
+      t = 0;
+    },
+    onFrame(fn) {
+      frameListeners.add(fn);
+      return () => frameListeners.delete(fn);
+    },
+    onPoseLost: () => () => false,
+    onError: () => () => false,
+  };
+}
 
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -44,7 +85,7 @@ export function App() {
     if (!playing) return;
 
     const source: PoseSource =
-      mode === 'camera' ? createMediaPipeSource() : createFixturePlayer(clip, { loop: true });
+      mode === 'camera' ? createMediaPipeSource() : createStubSource();
     const pipeline = createPipeline({ source, spec });
     const style: SkeletonStyle = {
       boneColor: cssVar('--bone', '#ffffff'),

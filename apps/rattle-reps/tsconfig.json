@@ -4,11 +4,13 @@
     "jsx": "react-jsx",
     "noEmit": true,
     "types": [
-      "vite/client"
+      "vite/client",
+      "node"
     ]
   },
   "include": [
     "src",
+    "scripts",
     "vite.config.ts"
   ]
 }

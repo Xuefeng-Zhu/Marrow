@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "plank",
+  "name": "Plank",
+  "minVisibility": 0.5,
+  "hysteresis": 5,
+  "minRepMs": 0,
+  "metrics": {
+    "bodyLine": { "kind": "angle", "points": ["leftShoulder", "leftHip", "leftAnkle"] },
+    "hipDrop": { "kind": "offset", "points": ["leftHip", "leftShoulder"], "axis": "y" }
+  },
+  "phases": [
+    { "id": "off", "metric": "bodyLine", "min": 0, "max": 150 },
+    { "id": "plank", "metric": "bodyLine", "min": 160, "max": 180 }
+  ],
+  "holds": [{ "id": "plank-hold", "phase": "plank", "minMs": 1000, "tickMs": 500 }],
+  "formRules": [
+    {
+      "id": "hips-sagging",
+      "metric": "hipDrop",
+      "max": 0.4,
+      "phases": ["plank"],
+      "debounceMs": 400,
+      "message": "Lift your hips"
+    },
+    {
+      "id": "hips-piking",
+      "metric": "hipDrop",
+      "min": 0.05,
+      "phases": ["plank"],
+      "debounceMs": 400,
+      "message": "Lower your hips"
+    }
+  ]
+}

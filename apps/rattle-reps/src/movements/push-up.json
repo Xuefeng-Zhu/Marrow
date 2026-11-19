@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "id": "push-up",
+  "name": "Push-up",
+  "minVisibility": 0.5,
+  "hysteresis": 5,
+  "minRepMs": 700,
+  "metrics": {
+    "elbowAngle": { "kind": "angle", "points": ["leftShoulder", "leftElbow", "leftWrist"] },
+    "bodyLine": { "kind": "angle", "points": ["leftShoulder", "leftHip", "leftAnkle"] }
+  },
+  "phases": [
+    { "id": "up", "metric": "elbowAngle", "min": 150, "max": 180 },
+    { "id": "down", "metric": "elbowAngle", "min": 40, "max": 110 }
+  ],
+  "formRules": [
+    {
+      "id": "hips-sagging",
+      "metric": "bodyLine",
+      "min": 165,
+      "debounceMs": 400,
+      "message": "Lift your hips"
+    },
+    {
+      "id": "shallow-depth",
+      "metric": "elbowAngle",
+      "max": 90,
+      "phases": ["down"],
+      "debounceMs": 600,
+      "message": "Go a bit lower"
+    }
+  ],
+  "rom": [{ "metric": "elbowAngle", "sampleOn": "rep" }]
+}
