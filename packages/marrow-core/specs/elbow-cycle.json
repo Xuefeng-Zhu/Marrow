@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "id": "elbow-cycle",
+  "name": "Elbow bend and extend",
+  "minVisibility": 0.5,
+  "hysteresis": 8,
+  "minRepMs": 600,
+  "metrics": {
+    "elbowAngle": { "kind": "angle", "points": ["leftShoulder", "leftElbow", "leftWrist"] },
+    "elbowDrift": { "kind": "offset", "points": ["leftElbow", "leftHip"], "axis": "x" }
+  },
+  "phases": [
+    { "id": "extended", "metric": "elbowAngle", "min": 150, "max": 180 },
+    { "id": "bent", "metric": "elbowAngle", "min": 30, "max": 70 }
+  ],
+  "holds": [{ "id": "bent-hold", "phase": "bent", "minMs": 1000, "tickMs": 500 }],
+  "formRules": [
+    {
+      "id": "elbow-drift",
+      "metric": "elbowDrift",
+      "max": 0.25,
+      "phases": ["bent"],
+      "debounceMs": 300,
+      "message": "Keep your elbow close to your side"
+    }
+  ],
+  "rom": [{ "metric": "elbowAngle", "sampleOn": "rep" }]
+}

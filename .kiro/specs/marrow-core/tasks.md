@@ -19,7 +19,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: unit cases plus fast-check P6 to P10.
   - Keeps typecheck, test and build green. Requirements: R4.
 
-- [ ] 4. Movement spec schema
+- [x] 4. Movement spec schema
   - `src/spec/schema.ts` (zod schemas, `MovementSpec`), `src/spec/parse.ts` (`parseMovementSpec` with path-based issues, cross-reference and hysteresis checks, `normHysteresis`, per-rule `hysteresis`, the same-metric phase reachability check (including first-match shadowing by earlier phases) and the form-rule clearable-margin check).
   - Add the example spec `packages/marrow-core/specs/elbow-cycle.json` and a test that validates every file in `specs/`.
   - Tests: unit cases for each rejection rule (including two phases with the same range on one metric) plus P20, P21 and P24.
