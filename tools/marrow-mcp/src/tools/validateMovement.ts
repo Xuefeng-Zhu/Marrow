@@ -1,13 +1,20 @@
-import { parseMovementSpec } from 'marrow-core';
+import { MovementSpecSchema } from 'marrow-core';
 import { readRepoJson } from '../repo';
 import { toPointer } from './pointer';
+
+/** Human-readable path such as `phases[1].min`; matches marrow-core's parseMovementSpec format. */
+function formatPath(path: (string | number)[]): string {
+  let out = '';
+  for (const seg of path) out += typeof seg === 'number' ? `[${seg}]` : out === '' ? seg : `.${seg}`;
+  return out;
+}
 
 export type ToolError = { pointer: string; path: string; message: string };
 export type ValidateResult = { valid: boolean; errors: ToolError[] };
 
 export function specErrors(json: unknown): ToolError[] {
-  const r = parseMovementSpec(json);
-  return r.ok ? [] : r.issues.map((i) => ({ pointer: toPointer(i.path), path: i.path, message: i.message }));
+  const r = MovementSpecSchema.safeParse(json);
+  return r.success ? [] : r.error.issues.map((i) => ({ pointer: toPointer(i.path), path: formatPath(i.path), message: i.message }));
 }
 
 const fail = (message: string): ValidateResult => ({ valid: false, errors: [{ pointer: '', path: '', message }] });

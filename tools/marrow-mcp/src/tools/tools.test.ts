@@ -14,9 +14,21 @@ const spec = () => JSON.parse(readFileSync(join(root, ELBOW), 'utf8'));
 
 describe('toPointer', () => {
   it('converts issue paths', () => {
-    expect(toPointer('')).toBe('');
-    expect(toPointer('phases[1].min')).toBe('/phases/1/min');
-    expect(toPointer('metrics.elbow.points[0]')).toBe('/metrics/elbow/points/0');
+    expect(toPointer([])).toBe('');
+    expect(toPointer(['phases', 1, 'min'])).toBe('/phases/1/min');
+    expect(toPointer(['metrics', 'elbow', 'points', 0])).toBe('/metrics/elbow/points/0');
+  });
+
+  it('keeps dotted metric keys intact and escapes ~ and /', () => {
+    expect(toPointer(['metrics', 'knee.angle', 'points', 0])).toBe('/metrics/knee.angle/points/0');
+    expect(toPointer(['metrics', 'a~b/c'])).toBe('/metrics/a~0b~1c');
+  });
+
+  it('reports a dotted metric key pointer from validateMovement', () => {
+    const s = spec();
+    s.metrics = { 'knee.angle': { kind: 'angle', points: ['nope', 'leftKnee', 'leftAnkle'] } };
+    const errs = validateMovement({ json: s }, root).errors;
+    expect(errs.map((e) => e.pointer)).toContain('/metrics/knee.angle/points/0');
   });
 });
 
