@@ -9,3 +9,5 @@ A movement is data, not code. When editing a movement JSON:
 - Phases need hysteresis on both edges and a `minRepMs`/`minHoldMs` so jitter can't count.
 - Ship a committed fixture or demo clip for every movement and a test that replays it to the expected count.
 - Left/right variants are separate specs (`*-left.json`, `*-right.json`) so asymmetry stays explicit.
+- After every edit to a movement JSON, run the `validate_movement` tool of the `marrow` MCP server (`tools/marrow-mcp`) and fix every reported pointer before moving on.
+- Run `replay_fixture` with the spec and its committed fixture or clip and confirm the rep count (or hold) matches what the replay test expects. Use `list_movements` to see what already exists.

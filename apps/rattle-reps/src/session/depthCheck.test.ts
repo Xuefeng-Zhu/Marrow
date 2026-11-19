@@ -1,6 +1,8 @@
-import type { MarrowEvent } from 'marrow-core';
+import { createEngine, type Frame, type MarrowEvent } from 'marrow-core';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { getWorkout } from '../movements/registry';
+import { summarize } from '../summary/summarize';
 import { createDepthChecker, depthRuleFor, withDepthWarnings } from './depthCheck';
 
 const rep = (t: number, count: number): MarrowEvent => ({ type: 'rep', t, count, durationMs: 1000, phaseEntries: {} });
@@ -83,6 +85,55 @@ describe('withDepthWarnings', () => {
           expect(inWindow).toHaveLength(r.min > 100 ? 1 : 0);
         });
       }),
+    );
+  });
+});
+
+/** A frame whose only visible landmarks are the left leg, with the given knee angle. */
+function kneeFrame(t: number, angle: number): Frame {
+  const rad = (angle * Math.PI) / 180;
+  const landmarks = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 0 }));
+  landmarks[23] = { x: 0.5, y: 0.3, z: 0, visibility: 1 };
+  landmarks[25] = { x: 0.5, y: 0.5, z: 0, visibility: 1 };
+  landmarks[27] = { x: 0.5 + 0.2 * Math.sin(rad), y: 0.5 - 0.2 * Math.cos(rad), z: 0, visibility: 1 };
+  return { t, landmarks };
+}
+
+describe('latched shallow-depth warning through the real core (R1.14, review finding: latched warnings)', () => {
+  // The core latches `shallow-depth` until the knee angle is back under bound - hysteresis, which standing never is.
+  // So consecutive shallow reps warn once in the core, and the app has to add the missing ones.
+  it('property: any mix of shallow and deep squats gets exactly one warning per shallow rep window, and only those reps are not clean', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.option(fc.integer({ min: 101, max: 109 }), { nil: undefined }), { minLength: 1, maxLength: 10 }),
+        fc.array(fc.integer({ min: 50, max: 90 }), { minLength: 10, maxLength: 10 }),
+        (shallow, deepMins) => {
+          const spec = getWorkout('squat')!.spec;
+          const engine = createEngine(spec);
+          const raw: MarrowEvent[] = [];
+          let t = 0;
+          const push = (angle: number, ms: number) => {
+            for (let end = t + ms; t < end; t += 50) raw.push(...engine.push(kneeFrame(t, angle)));
+          };
+          push(170, 800);
+          shallow.forEach((s, i) => {
+            push(s ?? deepMins[i]!, 900);
+            push(170, 800);
+          });
+          const events = withDepthWarnings(raw, 'squat');
+          const reps = events.filter((e) => e.type === 'rep');
+          expect(reps).toHaveLength(shallow.length);
+          let prev = Number.NEGATIVE_INFINITY;
+          reps.forEach((r, i) => {
+            const inWindow = shallowWarnings(events).filter((e) => e.t > prev && e.t <= r.t);
+            expect(inWindow, `rep ${i + 1}`).toHaveLength(shallow[i] === undefined ? 0 : 1);
+            prev = r.t;
+          });
+          const summary = summarize({ workout: { id: 'squat', kind: 'reps' }, events, startT: 0, stopT: t });
+          expect(summary.cleanReps).toBe(shallow.filter((s) => s === undefined).length);
+        },
+      ),
+      { numRuns: 60 },
     );
   });
 });

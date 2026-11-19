@@ -105,6 +105,30 @@ describe('pausable camera source', () => {
     expect(times.every((t, i) => i === 0 || t > times[i - 1]!)).toBe(true);
   });
 
+  // Review finding: camera hold termination (R19.5).
+  it('property: a pause anywhere inside a hold, of any length, ends it once with lost-pose and counts no paused time', async () => {
+    const hs = holdStartIndex();
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: 40 }), fc.integer({ min: 0, max: 60 }), async (offset, skipped) => {
+        const { inner, source, events, times, pipeline } = setup();
+        await pipeline.start();
+        const k = hs + offset;
+        for (let i = 0; i <= k; i++) inner.emit(frames[i]!);
+        const lastBefore = times[times.length - 1]!;
+        const holdStart = (events.find((e) => e.type === 'hold:start') as Extract<MarrowEvent, { type: 'hold:start' }>).t;
+        source.pause();
+        for (let i = k + 1; i <= k + skipped; i++) inner.emit(frames[i]!);
+        source.resume();
+        inner.emit(frames[k + skipped + 1]!);
+        const ends = events.filter((e) => e.type === 'hold:end') as Extract<MarrowEvent, { type: 'hold:end' }>[];
+        expect(ends).toHaveLength(1);
+        expect(ends[0]).toMatchObject({ reason: 'lost-pose', t: lastBefore + plank.spec.holdGapMs + 1, durationMs: lastBefore - holdStart });
+        expect(times.every((t, i) => i === 0 || t > times[i - 1]!)).toBe(true);
+      }),
+      { numRuns: 60 },
+    );
+  });
+
   it('a pause with no open hold leaves a one-frame gap and no lost-pose', async () => {
     const { inner, source, events, times, pipeline } = setup();
     await pipeline.start();

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseMovementSpec } from 'marrow-core';
+import fc from 'fast-check';
+import { evaluateMetrics, LM, parseMovementSpec } from 'marrow-core';
 import { describe, expect, it } from 'vitest';
 import { TESTS } from '../tests';
 
@@ -50,6 +51,31 @@ describe('movement specs', () => {
     for (const t of TESTS.filter((x) => x.family === 'shoulder-flexion')) {
       const m = t.spec.metrics['shoulderAngle'];
       expect(m && m.kind === 'angle' ? m.plane : undefined).toBe('xy');
+    }
+  });
+
+  // Review finding: shoulder projection plane. Single-camera depth is noisy, so the angle must not read z.
+  it('property: the shoulder angle ignores depth, and is 0 for an arm at the side and 90 for an arm held forward in the image plane', () => {
+    const coord = fc.double({ min: 0, max: 1, noNaN: true });
+    const point = fc.record({ x: coord, y: coord });
+    const z = fc.double({ min: -2, max: 2, noNaN: true });
+    for (const t of TESTS.filter((x) => x.family === 'shoulder-flexion')) {
+      const side = t.side;
+      fc.assert(
+        fc.property(fc.tuple(point, point, point), fc.tuple(z, z, z), fc.tuple(z, z, z), ([hip, shoulder, elbow], za, zb) => {
+          const make = (zs: number[]) => {
+            const landmarks = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 1 }));
+            landmarks[LM[`${side}Hip` as 'leftHip']] = { ...hip, z: zs[0]!, visibility: 1 };
+            landmarks[LM[`${side}Shoulder` as 'leftShoulder']] = { ...shoulder, z: zs[1]!, visibility: 1 };
+            landmarks[LM[`${side}Elbow` as 'leftElbow']] = { ...elbow, z: zs[2]!, visibility: 1 };
+            return { t: 0, landmarks };
+          };
+          const a = evaluateMetrics(t.spec, make(za)).shoulderAngle!;
+          const b = evaluateMetrics(t.spec, make(zb)).shoulderAngle!;
+          return Object.is(a, b);
+        }),
+        { numRuns: 100 },
+      );
     }
   });
 
