@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -78,5 +78,19 @@ describe('picker and mode screens', () => {
     expect(camera.getAttribute('aria-describedby')).toBe('camera-reason');
     expect(document.getElementById('camera-reason')?.textContent).toMatch(/secure|camera/i);
     expect((screen.getByRole('button', { name: 'Demo clip' }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('Demo clip opens the lazy session screen, and Stop leads to the end of the set', async () => {
+    setCamera(false);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /^Squat/ }));
+    await user.click(screen.getByRole('button', { name: 'Demo clip' }));
+    const stop = await screen.findByRole('button', { name: 'Stop' }, { timeout: 5000 });
+    expect(screen.getByTestId('demo-label')).toBeTruthy();
+    await waitFor(() => expect((stop as HTMLButtonElement).disabled).toBe(false));
+    await user.click(stop);
+    expect(await screen.findByRole('heading', { level: 1, name: /Coming soon/ }, { timeout: 5000 })).toBeTruthy();
   });
 });

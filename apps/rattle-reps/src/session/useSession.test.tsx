@@ -35,3 +35,27 @@ describe('useSession', () => {
     expect(result.current.view.error?.demoFallback).toBe(true);
   });
 });
+
+describe('useSession frame subscription', () => {
+  it('delivers frames to a listener added before the controller exists, and stops after unsubscribe', async () => {
+    const source = new ScriptedSource();
+    const workout = getWorkout('squat')!;
+    const target = { kind: 'reps', reps: 5 } as const;
+    const { result } = renderHook(() =>
+      useSession({
+        workout,
+        mode: 'demo',
+        target,
+        createSource: async () => ({ source, pause: () => undefined, resume: () => undefined }),
+      }),
+    );
+    const seen: number[] = [];
+    const off = result.current.onFrame((f) => seen.push(f.frame.t));
+    await waitFor(() => expect(result.current.view.status).toBe('running'));
+    const landmarks = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.5, z: 0, visibility: 1 }));
+    source.emit({ t: 0, landmarks });
+    off();
+    source.emit({ t: 50, landmarks });
+    expect(seen).toEqual([0]);
+  });
+});

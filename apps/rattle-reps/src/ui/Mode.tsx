@@ -1,6 +1,6 @@
 import { getCircuit } from '../circuits/presets';
 import { getWorkout } from '../movements/registry';
-import { cameraSupport, type CameraSupport } from '../session/sourceFactory';
+import { cameraSupport, type CameraSupport } from '../session/cameraSupport';
 import type { Choice, Mode as ModeId } from '../session/screenReducer';
 import { Layout } from './Layout';
 import styles from './Mode.module.css';

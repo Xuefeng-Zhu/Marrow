@@ -3,7 +3,10 @@ import { getFixture } from '../fixtures';
 import type { WorkoutDef } from '../movements/registry';
 import { createPausableClock, type PausableClockOptions } from './pausableClock';
 import { createPausableSource } from './pausableSource';
+import { cameraSupport } from './cameraSupport';
 import type { Mode } from './screenReducer';
+
+export { cameraSupport, type CameraSupport } from './cameraSupport';
 
 /** A pose source and its pause controls, chosen for the mode. */
 export interface SessionSource {
@@ -23,20 +26,6 @@ export interface CreateSourceOptions {
   isHoldActive: () => boolean;
   /** Timer and time source of the demo clip, so that tests can run it on a fake clock. */
   clock?: PausableClockOptions;
-}
-
-export type CameraSupport = { ok: true } | { ok: false; reason: string };
-
-/** Whether the camera can be used: a secure context with `navigator.mediaDevices` (R21.6). */
-export function cameraSupport(
-  env: { isSecureContext?: boolean; mediaDevices?: unknown } = {
-    isSecureContext: globalThis.isSecureContext,
-    mediaDevices: globalThis.navigator?.mediaDevices,
-  },
-): CameraSupport {
-  if (!env.isSecureContext) return { ok: false, reason: 'The camera needs a secure (HTTPS) page.' };
-  if (!env.mediaDevices) return { ok: false, reason: 'This browser does not give access to a camera.' };
-  return { ok: true };
 }
 
 export async function createSource(opts: CreateSourceOptions): Promise<SessionSource> {

@@ -65,7 +65,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: lists all five workouts and the presets, activating an entry opens the mode screen, Demo clip does not touch `getUserMedia`, camera disabled with an explanation when `navigator.mediaDevices` is missing, focus moves to the `h1`.
   - Keeps typecheck, test and build green. Requirements: R2.1 to R2.7, R3.1, R14.4, R14.5, R15.1, R15.4, R21.6.
 
-- [ ] 12. Live session screen
+- [x] 12. Live session screen
   - Add `ui/Session.tsx`, `ui/Counter.tsx`, `ui/CueBar.tsx`, `ui/SkeletonCanvas.tsx` (rAF loop, `drawSkeleton`, tint, whole-figure rattle with a pure `rattleOffset`), the "Demo clip" label, the show-my-video toggle, Stop and Pause controls with Escape and Space shortcuts, and the pose-lost cue. Lazy-load the session screen with `React.lazy`.
   - Tests: counter and aria-live text, warning cue visibility and replacement, canvas `aria-hidden` with a text alternative, shortcuts work and are ignored in text inputs, rAF cancelled on unmount, `rattleOffset` is zero after 600 ms and always zero under reduced motion.
   - Keeps typecheck, test and build green. Requirements: R3.9, R5.1 to R5.7, R6.1 to R6.6, R8.1 to R8.7, R19.4 to R19.6, R21.4.
