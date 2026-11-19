@@ -361,6 +361,8 @@ export function createRunController(opts: ControllerOptions): RunController {
     // A run that never gets a frame still ends by the timer.
     lastWall = sched.now();
     armDeadline(rom || test.kind === 'count' ? test.limitMs : STANCE_WAIT_MS);
+    // A user who is out of frame from the start produces no frames, only pose-lost notices.
+    armLost();
     await p.start();
   }
 

@@ -70,7 +70,12 @@ export function useSession(initial = initialSession) {
     confirmSafety: (confirmed: boolean) => dispatch({ type: 'confirm-safety', confirmed }),
     useDemo: () => dispatch({ type: 'use-demo' }),
     start,
-    stop: stopController,
+    stop: () => {
+      // Stop during the countdown cancels the run without onEnd, so leave the countdown screen here.
+      const cancelled = controller.current?.snapshot().phase === 'countdown';
+      stopController();
+      if (cancelled) dispatch({ type: 'back' });
+    },
     done: () => controller.current?.done(),
     back: () => {
       stopController();

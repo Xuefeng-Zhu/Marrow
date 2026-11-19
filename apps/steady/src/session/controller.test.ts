@@ -259,3 +259,18 @@ describe('camera errors (R3.5)', () => {
     expect(errors[0]!.code).toBe('camera-unavailable');
   });
 });
+
+describe('lost-pose prompt without any frame', () => {
+  it('prompts after two seconds when the source never delivers a frame', async () => {
+    const test = TEST_BY_ID['chair-stand'] ?? TESTS[0]!;
+    const { source } = silentSource([]);
+    const { c, prompts } = harness(test, source);
+    c.start();
+    await advance(5000);
+    await advance(1900);
+    expect(prompts).not.toContain(test.script.lost);
+    await advance(200);
+    expect(prompts).toContain(test.script.lost);
+    c.stop();
+  });
+});
