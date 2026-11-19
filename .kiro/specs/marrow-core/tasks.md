@@ -48,7 +48,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: invalid fixture errors, timing with a fake clock, P15 using the committed fixture.
   - Keeps typecheck, test and build green. Requirements: R2, R2b, R10 P15.
 
-- [ ] 9. Pipeline and public entry
+- [x] 9. Pipeline and public entry
   - `src/pipeline.ts` (`createPipeline`, typed `on`, frame listener, `stop`; on `source.onPoseLost(t)` call `engine.advance(t)` and dispatch the events), finalise `src/index.ts` exports, and add a README section in `packages/marrow-core/README.md` documenting the public API.
   - Tests: end-to-end test that the committed fixture and spec yield the expected events through the pipeline, with smoothing on and off, and a test with a stub source that fires `onPoseLost` during a hold and gets `hold:end` with `lost-pose`.
   - Keeps typecheck, test and build green. Requirements: R7.
