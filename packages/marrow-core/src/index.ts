@@ -32,3 +32,6 @@ export type { Fixture } from './fixtures/schema';
 export { createPipeline } from './pipeline';
 export type { Pipeline, PipelineOptions, ProcessedFrame } from './pipeline';
 
+export { POSE_CONNECTIONS } from './draw/connections';
+export { drawSkeleton } from './draw/drawSkeleton';
+export type { SkeletonStyle } from './draw/drawSkeleton';

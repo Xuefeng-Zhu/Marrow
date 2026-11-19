@@ -84,6 +84,11 @@ A `rom:sample` is skipped when no valid value was observed since the previous tr
 - `replay(fixture)` yields the frames synchronously, for tests and offline analysis.
 - `parseFixture(json)` validates a fixture and throws `FixtureError` (with `field` and `frameIndex`) on a bad one.
 
+### Skeleton overlay
+
+- `POSE_CONNECTIONS` is the list of landmark index pairs (bones).
+- `drawSkeleton(ctx, frame, style)` draws bones and joints onto a `CanvasRenderingContext2D`, scaling normalised landmarks by the canvas size. `style` is `{ boneColor, jointColor, lineWidth, jointRadius, minVisibility? }` (`minVisibility` defaults to 0.5). Landmarks below it, and bones touching them, are skipped. An empty frame draws nothing. The caller supplies all colours.
+
 ### Pipeline
 
 - `createPipeline({ source, spec, smoothing })`. `smoothing` is `OneEuroOptions`, or `false` to pass landmarks through. Omitted means smoothing with defaults.

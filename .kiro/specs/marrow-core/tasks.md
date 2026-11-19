@@ -58,7 +58,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: with the MediaPipe module and `getUserMedia` mocked, cover start, stop, permission denied, model load failure, and no-pose frames (no `Frame` delivered, `onPoseLost` called with the frame's `t`). Add a test that importing the public entry does not load `@mediapipe/tasks-vision` eagerly.
   - Keeps typecheck, test and build green. Requirements: R2, R2a.
 
-- [ ] 11. Skeleton overlay helper
+- [x] 11. Skeleton overlay helper
   - `src/draw/connections.ts` and `src/draw/drawSkeleton.ts`.
   - Tests: with a fake canvas context, verify visibility skipping, empty frames and call counts.
   - Keeps typecheck, test and build green. Requirements: R8.
