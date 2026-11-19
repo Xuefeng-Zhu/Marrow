@@ -168,11 +168,11 @@ Rules: `hold:start` sets `startT = e.t` once. The engine emits `hold:start` afte
 ```ts
 // trend.ts
 interface HistoryPoint { day: string; value: number }          // day is local 'YYYY-MM-DD'
-aggregateByDay(records: readonly {takenAt: string; value: number}[], tzOffset?): HistoryPoint[]
+aggregateByDay(records: readonly {takenAt: string; value: number}[], tzOffset?: number | ((epochMs: number) => number)): HistoryPoint[]
 summarize(points: readonly HistoryPoint[]): { first: number; latest: number; best: number; change: number } | null
 ```
 
-Local day uses `Date` local fields so a result at 23:30 belongs to the user's day. `tzOffset` is an optional injected function or minutes offset so tests are deterministic.
+Local day uses `Date` local fields so a result at 23:30 belongs to the user's day. `tzOffset` is an optional injected offset in minutes east of UTC (or a function from epoch ms to that offset) so tests are deterministic. Without it the runtime's local time zone is used. Records with an unparseable `takenAt` or a non-finite value are skipped.
 
 ```ts
 // readiness.ts

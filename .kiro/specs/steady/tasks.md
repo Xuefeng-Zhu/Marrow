@@ -34,7 +34,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Add tests that feed the events produced by replaying the task 3 clips through the counter and the timer and match the designed outcome (R7, R8, R13.4).
   - Requirements: R7, R8. Properties: P9 to P16.
 
-- [ ] 6. Trend aggregation with properties
+- [x] 6. Trend aggregation with properties
   - `src/logic/trend.ts` (`aggregateByDay`, `summarize`) with an injectable time-zone offset.
   - Tests: unit cases (one record, same-day records, midnight boundary, empty) plus fast-check P17 to P20.
   - Requirements: R10.4, R10.5. Properties: P17 to P20.
