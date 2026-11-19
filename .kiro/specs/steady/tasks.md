@@ -64,7 +64,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests with Testing Library: choose a test, Start stays disabled until the safety confirmation, keyboard-only flow, demo needs no permission prompt (the camera source factory is not called), first-launch About appears once.
   - Requirements: R2, R3, R12.2, R13.7, R15.4.
 
-- [ ] 12. Countdown, Run and Result screens
+- [x] 12. Countdown, Run and Result screens
   - `src/ui/Countdown.tsx`, `src/ui/Run.tsx` (canvas overlay via `drawSkeleton`, large `aria-live` prompt, live value, time, Stop and Done, Pause and Play for the demo preview), `src/ui/ResultCard.tsx` (value, context, asymmetry when the other side exists for the day, Save, Try again, Back). Wire saving to `data/history.ts`.
   - Tests: demo flow for every test from Home to a saved result using the committed clips and fake timers (R13.3); prompts are `role="status"`; Stop is reachable by keyboard; speech cancelled on leaving; reduced-motion removes countdown animation; "Foot was not lifted" and "No movement detected" are not saved; a storage failure shows the message and keeps the card printable.
   - Requirements: R4, R5, R7, R8, R9.1, R9.6, R9.7, R13.3, R13.6.

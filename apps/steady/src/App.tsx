@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getAcknowledged, setAcknowledged, useVoicePref } from './data/prefs';
+import { buildResult } from './logic/result';
+import { getAcknowledged, getAgeBand, setAcknowledged, useVoicePref } from './data/prefs';
 import { createSpeechService, type SpeechService } from './services/speech';
 import { initialSession } from './session/machine';
 import { useSession } from './session/useSession';
 import { TEST_BY_ID } from './tests';
 import styles from './App.module.css';
 import { About } from './ui/About';
+import { Countdown } from './ui/Countdown';
 import { Home } from './ui/Home';
+import { ResultCard } from './ui/ResultCard';
+import { Run } from './ui/Run';
 import { Setup } from './ui/Setup';
 import { useHeadingFocus } from './ui/useHeadingFocus';
 
@@ -109,13 +113,29 @@ export function App({ speech: injected }: AppProps = {}) {
       );
       break;
     case 'countdown':
-      screen = <Pending title="Get ready" onBack={session.stop} />;
+      screen = <Countdown n={countdown ?? 5} onCancel={session.stop} />;
       break;
     case 'running':
-      screen = <Pending title="Running" onBack={session.stop} />;
+      screen = test && (
+        <Run
+          test={test}
+          snapshot={snapshot}
+          prompt={prompt}
+          frameRef={session.frameRef}
+          voice={voiceProps}
+          onStop={session.stop}
+          onDone={session.done}
+        />
+      );
       break;
     case 'result':
-      screen = <Pending title="Your result" onBack={session.back} />;
+      screen = outcome && (
+        <ResultCard
+          model={buildResult({ ...outcome, ageBand: getAgeBand() })}
+          onTryAgain={session.tryAgain}
+          onBack={session.back}
+        />
+      );
       break;
     case 'history':
       screen = <Pending title="History" onBack={session.back} />;
