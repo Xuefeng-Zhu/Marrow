@@ -1,7 +1,9 @@
-import { lazy, Suspense, useCallback, useReducer, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { getCircuit } from './circuits/presets';
 import type { CreateSourceOptions, SessionSource } from './session/sourceFactory';
-import { recordSet } from './session/recordSet';
+import { computeStreak } from './streak/streak';
+import { History } from './ui/History';
+import { localDayKey, recordSet } from './session/recordSet';
 import type { SessionResult } from './session/sessionController';
 import { CircuitSummary } from './ui/CircuitSummary';
 import { Summary } from './ui/Summary';
@@ -76,6 +78,23 @@ function Screens({
     [store],
   );
 
+  const [streakBadge, setStreakBadge] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (screen.name !== 'picker') return;
+    let alive = true;
+    store.loadHistory().then(
+      (list) => {
+        if (!alive) return;
+        const { current } = computeStreak(list, localDayKey(Date.now()));
+        setStreakBadge(current > 0 ? `Weekly streak: ${current} ${current === 1 ? 'week' : 'weeks'}` : undefined);
+      },
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [screen.name, store]);
+
   const homeButton = (
     <button type="button" className="btn" onClick={() => dispatch({ type: 'home' })}>
       Home
@@ -89,6 +108,7 @@ function Screens({
           onPickWorkout={(id) => dispatch({ type: 'pickWorkout', id })}
           onPickCircuit={(id) => dispatch({ type: 'pickCircuit', id })}
           onOpenHistory={() => dispatch({ type: 'openHistory' })}
+          streakBadge={streakBadge}
         />
       );
     case 'mode':
@@ -169,12 +189,14 @@ function Screens({
           onHome={() => dispatch({ type: 'home' })}
         />
       );
-    default:
-      // The history screen arrives in the next task.
+    case 'history':
       return (
-        <Layout title="Coming soon">
-          {homeButton}
-        </Layout>
+        <History
+          store={store}
+          today={localDayKey(Date.now())}
+          onStart={() => dispatch({ type: 'back' })}
+          onBack={() => dispatch({ type: 'back' })}
+        />
       );
   }
 }

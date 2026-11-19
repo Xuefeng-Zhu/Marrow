@@ -86,7 +86,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: summary values match `summarize`, zero-rep sets are not saved, demo sets are saved with `mode: "demo"` and do not extend the streak, a circuit runs all steps in order in demo mode with each step's own fixture, skip step and skip rest, leaving midway keeps completed sets, rest announcement happens at start and end only.
   - Keeps typecheck, test and build green. Requirements: R3.8, R9.1 to R9.11, R10.1 to R10.11, R11.8, R12.8.
 
-- [ ] 16. History and streak screen
+- [x] 16. History and streak screen
   - Add `ui/History.tsx` (list newest first, demo label, current and longest streak, this week's totals, empty state, "Clear all data" with confirmation, no-persistence notice) and show the live streak on the picker.
   - Tests: ordering and labels, empty state, totals computed from entries with a fixed "today", clear requires confirmation and empties storage, the screen does not import the session chunk (checked by a module graph test or by lazy boundary test), works with the in-memory fallback.
   - Keeps typecheck, test and build green. Requirements: R2.6, R11.4, R11.5, R12.4 to R12.8, R13.1 to R13.6.

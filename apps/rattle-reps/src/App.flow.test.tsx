@@ -89,3 +89,27 @@ describe('set and circuit flow in demo mode', () => {
     expect((await store.loadHistory()).map((e) => e.movementId)).toEqual(['push-up']);
   }, 20_000);
 });
+
+describe('history and streak on the picker', () => {
+  it('opens the history screen from the picker and goes back', async () => {
+    const user = userEvent.setup();
+    render(<App store={createRattleStore()} />);
+    await user.click(screen.getByRole('button', { name: /History and streak/ }));
+    expect(h1()).toBe('History and streak');
+    await user.click(await screen.findByRole('button', { name: 'Start a workout' }));
+    expect(h1()).toBe('Pick your torment');
+  });
+
+  it('shows the live streak on the picker', async () => {
+    const store = createRattleStore();
+    const now = Date.now();
+    const day = new Date(now);
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    await store.addEntry({
+      id: 'x', movementId: 'squat', kind: 'reps', reps: 10, cleanReps: 10, cleanPct: 100, holdMs: 0,
+      tutMs: 1000, warnings: [], mode: 'camera', startedAt: now, day: key,
+    });
+    render(<App store={store} />);
+    await waitFor(() => expect(screen.getByTestId('streak-badge').textContent).toBe('Weekly streak: 1 week'));
+  });
+});
