@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import type { Frame } from 'marrow-core';
+import { useCallback, useEffect, useReducer, useRef, useState, type MutableRefObject } from 'react';
 import type { RunOutcome } from '../logic/result';
 import { TEST_BY_ID, type TestId } from '../tests';
 import { createRunController, type RunController, type RunSnapshot } from './controller';
@@ -13,6 +14,8 @@ export function useSession(initial = initialSession) {
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
   const [prompt, setPrompt] = useState('');
   const controller = useRef<RunController | null>(null);
+  /** The latest processed frame of the run, for the overlay. */
+  const frameRef: MutableRefObject<Frame | null> = useRef<Frame | null>(null);
 
   const stopController = useCallback(() => {
     controller.current?.stop();
@@ -24,12 +27,16 @@ export function useSession(initial = initialSession) {
     stopController();
     setOutcome(null);
     setPrompt('');
+    frameRef.current = null;
     dispatch({ type: 'start' });
     const c = createRunController({
       test: TEST_BY_ID[state.testId],
       mode: state.mode,
       onUpdate: setSnapshot,
       onPrompt: setPrompt,
+      onFrame: (f) => {
+        frameRef.current = f;
+      },
       onCountdown: (n) => {
         if (n === 5) setSnapshot(null);
       },
@@ -65,9 +72,11 @@ export function useSession(initial = initialSession) {
     snapshot,
     outcome,
     prompt,
+    frameRef,
     chooseTest: (testId: TestId, mode?: SourceMode) => dispatch({ type: 'choose-test', testId, ...(mode ? { mode } : {}) }),
     setMode: (mode: SourceMode) => dispatch({ type: 'set-mode', mode }),
     confirmSafety: (confirmed: boolean) => dispatch({ type: 'confirm-safety', confirmed }),
+    reportError: (code: string) => dispatch({ type: 'source-error', code }),
     useDemo: () => dispatch({ type: 'use-demo' }),
     start,
     stop: () => {

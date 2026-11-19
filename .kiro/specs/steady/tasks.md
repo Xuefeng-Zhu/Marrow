@@ -59,7 +59,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: reducer cannot reach `running` except from `countdown` and cannot start before the safety confirmation (R3.3); readiness needs one continuous second (R3.4); a headless controller test runs every demo clip to its result with a fake clock and checks the result equals the designed outcome; ROM run ends after 3 reps, on Done, or at 60 s (R5.1); camera errors surface typed messages and offer the demo (R3.5); `stop` releases the source (R4.7).
   - Requirements: R3.4 to R3.6, R4, R5.1, R7.1, R8.2.
 
-- [ ] 11. Home, About and Setup screens
+- [x] 11. Home, About and Setup screens
   - `src/ui/Home.tsx` (grouped tests, left/right choices, last result, source choice, voice toggle, history link), `src/ui/About.tsx` (first-launch acknowledgement, R12.2), `src/ui/Setup.tsx` (guidance, safety notice with confirm, camera preview with skeleton and "Ready" indicator, error and demo fallback). Focus moves to each `<h1>`.
   - Tests with Testing Library: choose a test, Start stays disabled until the safety confirmation, keyboard-only flow, demo needs no permission prompt (the camera source factory is not called), first-launch About appears once.
   - Requirements: R2, R3, R12.2, R13.7, R15.4.
