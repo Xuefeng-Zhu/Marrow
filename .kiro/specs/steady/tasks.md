@@ -84,7 +84,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: `src/a11y.test.tsx` with an axe helper over all screens; tab-order test for Home, Setup, Run and Result; CSS lint test for the reduced-motion block and the target size rule.
   - Requirements: R15, R16.
 
-- [ ] 16. Docs and production build ready for Vercel
+- [x] 16. Docs and production build ready for Vercel
   - Write `apps/steady/README.md` (what it is, run, demo mode, how to add a test, disclaimer, privacy, deploy). Add a Steady section to the root `README.md` if the structure expects one. Keep `vercel.json` (output `dist`, SPA rewrite) and confirm `VITE_BASE` is honoured.
   - Verify: `npm ci`, `npm run typecheck`, `npm test` and `npm run build` at the root all exit 0; `apps/steady/dist` exists with `index.html`, hashed assets and the clips bundled; a test or script check shows the demo path does not fetch `@mediapipe/tasks-vision` or any network URL (the MediaPipe import stays dynamic and out of the entry chunk); no `console.error` output in tests; no files outside `apps/steady`, `README.md` and the lockfile changed.
   - Mark all tasks above as done in this file.
