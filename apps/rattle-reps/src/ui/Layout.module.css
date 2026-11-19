@@ -1,0 +1,38 @@
+.page {
+  min-height: 100vh;
+}
+
+.header {
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--bg-raised);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  color: var(--pumpkin);
+  letter-spacing: 0.04em;
+}
+
+.logo {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--bone);
+}
+
+.main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+}
+
+.wide {
+  max-width: 72rem;
+}
+
+.title {
+  color: var(--bone);
+  text-shadow: 0 0 14px rgb(181 140 255 / 0.5);
+}
