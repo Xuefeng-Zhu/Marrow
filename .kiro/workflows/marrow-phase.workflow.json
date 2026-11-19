@@ -1,0 +1,69 @@
+{
+  "name": "marrow-phase",
+  "description": "Ship one Marrow spec phase: implement, review in parallel with the project's custom agents, fix until approved (max 2 rounds), then open the PR.",
+  "inputs": {
+    "spec": "string",
+    "tasks": "string",
+    "issue": "string"
+  },
+  "steps": [
+    {
+      "type": "step",
+      "id": "implement",
+      "agent": "wf-coder",
+      "prompt": "Implement tasks {{tasks}} of .kiro/specs/{{spec}}/tasks.md on a new branch. Follow .kiro/steering. Tick finished tasks. Run npm run typecheck, npm test and npm run build at the repo root; all must pass. Finish with a short summary of what changed."
+    },
+    {
+      "type": "repeat",
+      "id": "review-loop",
+      "maxIterations": 2,
+      "onMaxIterations": "continue",
+      "stopWhen": "{{aggregate.output}} contains VERDICT: APPROVED",
+      "steps": [
+        {
+          "type": "parallel",
+          "id": "reviews",
+          "joinPolicy": "allSettled",
+          "branches": [
+            {
+              "type": "step",
+              "id": "properties",
+              "agent": "property-hunter",
+              "prompt": "Point at .kiro/specs/{{spec}}/design.md. Add any missing fast-check tests for its numbered correctness properties that tasks {{tasks}} touch, run npm test, and report each property as covered, added, or FAILING with its shrunk counterexample."
+            },
+            {
+              "type": "step",
+              "id": "a11y",
+              "agent": "a11y-reviewer",
+              "prompt": "Review the files changed on this branch against .kiro/steering/accessibility.md and the privacy rule (no camera data leaves the device). List findings as file:line with a fix, or say NO FINDINGS."
+            },
+            {
+              "type": "step",
+              "id": "behavior",
+              "agent": "semantic_reviewer",
+              "prompt": "Review this branch's changes against .kiro/specs/{{spec}}/requirements.md for behavioral bugs and missing edge cases. List findings with file:line, or say NO FINDINGS."
+            }
+          ]
+        },
+        {
+          "type": "step",
+          "id": "aggregate",
+          "agent": "wf-review-aggregator",
+          "prompt": "Merge these three reviews into one list ordered by severity. End with exactly VERDICT: APPROVED if there are no failing properties and no P0/P1 findings, else VERDICT: CHANGES.\n\nProperties:\n{{properties.output}}\n\nAccessibility:\n{{a11y.output}}\n\nBehavior:\n{{behavior.output}}"
+        },
+        {
+          "type": "step",
+          "id": "fix",
+          "agent": "wf-coder",
+          "prompt": "If the review ends with VERDICT: APPROVED, change nothing and say so. Otherwise fix every failing property and P0/P1 finding without weakening any property test, rerun typecheck, test and build, and commit.\n\n{{aggregate.output}}"
+        }
+      ]
+    },
+    {
+      "type": "step",
+      "id": "open-pr",
+      "agent": "wf-pr-submitter",
+      "prompt": "Open a pull request to main for this branch titled after the phase. The body says Closes #{{issue}}, lists tasks {{tasks}}, and includes the final aggregated review."
+    }
+  ]
+}
