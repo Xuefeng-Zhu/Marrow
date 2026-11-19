@@ -101,7 +101,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Update the root `README.md` Rattle Reps section, add `apps/rattle-reps/README.md` (what it is, demo-clip mode, how to add a movement, how to regenerate fixtures with `npm run make-fixtures -w apps/rattle-reps`, privacy notes), and update `docs/architecture.md` with a pointer to this spec.
   - Keeps typecheck, test and build green. Requirements: R4.5, R20.1, R20.2, R20.5, R20.6.
 
-- [ ] 19. Final: production build ready for Vercel
+- [x] 19. Final: production build ready for Vercel
   - Run the full root checks from a clean install: `npm ci && npm run typecheck && npm test && npm run build`.
   - Verify `npm run build -w apps/rattle-reps` output in `apps/rattle-reps/dist` with `VITE_BASE` unset and with `VITE_BASE=/rattle-reps/`, served by `vite preview`, and check that assets resolve and demo mode runs for all five movements in both cases.
   - Confirm `vercel.json` keeps `outputDirectory: dist` and the SPA rewrite. Confirm the session and camera code are in separate lazy chunks from the picker and history, and record chunk sizes in the README.

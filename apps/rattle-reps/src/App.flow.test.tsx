@@ -113,3 +113,13 @@ describe('history and streak on the picker', () => {
     await waitFor(() => expect(screen.getByTestId('streak-badge').textContent).toBe('Weekly streak: 1 week'));
   });
 });
+
+describe('demo clip mode for every movement', () => {
+  it.each(['Squat', 'Push-up', 'Lunge', 'Jumping jack', 'Plank'])('%s runs to a summary with no camera', async (name) => {
+    const user = userEvent.setup();
+    render(<App store={createRattleStore()} createSource={fastDemo} />);
+    await user.click(screen.getByRole('button', { name: new RegExp(`^${name}`, 'i') }));
+    await user.click(screen.getByRole('button', { name: 'Demo clip' }));
+    expect(await screen.findByRole('heading', { level: 1, name: /set summary/ }, { timeout: 8000 })).toBeTruthy();
+  }, 15_000);
+});
