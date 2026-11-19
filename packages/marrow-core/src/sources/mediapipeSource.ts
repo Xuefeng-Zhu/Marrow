@@ -3,7 +3,9 @@ import type { PoseSource, SourceError, SourceErrorCode } from './types';
 
 export const DEFAULT_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
-export const DEFAULT_WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm';
+/** Must match the exact `@mediapipe/tasks-vision` version in package.json. */
+export const MEDIAPIPE_VERSION = '1.2.3';
+export const DEFAULT_WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`;
 
 export type MediaPipeSourceOptions = {
   /** URL of the Pose Landmarker `.task` model. Defaults to the public lite model. */
@@ -93,7 +95,11 @@ export function createMediaPipeSource(opts: MediaPipeSourceOptions = {}): PoseSo
           for (const fn of [...lostListeners]) fn(t);
         }
       } catch (err) {
+        running = false;
+        generation += 1;
+        release();
         report('model-load-failed', `Pose detection failed: ${errorMessage(err)}`);
+        return;
       }
       if (gen === generation && running) schedule(gen);
     };
@@ -135,11 +141,18 @@ export function createMediaPipeSource(opts: MediaPipeSourceOptions = {}): PoseSo
       try {
         const vision = await import('@mediapipe/tasks-vision');
         const fileset = await vision.FilesetResolver.forVisionTasks(opts.wasmUrl ?? DEFAULT_WASM_URL);
-        const created = (await vision.PoseLandmarker.createFromOptions(fileset, {
-          baseOptions: { modelAssetPath: opts.modelUrl ?? DEFAULT_MODEL_URL, delegate: 'GPU' },
-          runningMode: 'VIDEO',
-          numPoses: 1,
-        })) as Landmarker;
+        const create = (delegate: 'GPU' | 'CPU') =>
+          vision.PoseLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: opts.modelUrl ?? DEFAULT_MODEL_URL, delegate },
+            runningMode: 'VIDEO',
+            numPoses: 1,
+          }) as Promise<Landmarker>;
+        let created: Landmarker;
+        try {
+          created = await create('GPU');
+        } catch {
+          created = await create('CPU');
+        }
         if (cancelled()) {
           created.close();
           return;

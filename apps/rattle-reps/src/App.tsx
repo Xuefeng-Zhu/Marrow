@@ -56,6 +56,7 @@ export function App() {
       setError(e.message);
       setPlaying(false);
     });
+    source.onPoseLost(() => ctx?.clearRect(0, 0, WIDTH, HEIGHT));
     pipeline.onFrame(({ frame }) => {
       if (!ctx) return;
       ctx.clearRect(0, 0, WIDTH, HEIGHT);

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Frame } from '../types';
-import { createMediaPipeSource } from './mediapipeSource';
+import { createMediaPipeSource, DEFAULT_WASM_URL, MEDIAPIPE_VERSION } from './mediapipeSource';
 import type { SourceError } from './types';
 
 const mp = vi.hoisted(() => ({
   loaded: 0,
   createFails: false,
+  gpuFails: false,
   detect: vi.fn(),
   close: vi.fn(),
 }));
@@ -15,7 +16,8 @@ vi.mock('@mediapipe/tasks-vision', () => {
   return {
     FilesetResolver: { forVisionTasks: vi.fn(async () => ({})) },
     PoseLandmarker: {
-      createFromOptions: vi.fn(async () => {
+      createFromOptions: vi.fn(async (_f: unknown, o: { baseOptions: { delegate: string } }) => {
+        if (mp.gpuFails && o.baseOptions.delegate === 'GPU') throw new Error('no webgl');
         if (mp.createFails) throw new Error('boom');
         return { detectForVideo: mp.detect, close: mp.close };
       }),
@@ -133,6 +135,36 @@ describe('createMediaPipeSource', () => {
     await expect(source.start()).resolves.toBeUndefined();
     expect(errors.map((e) => e.code)).toEqual(['model-load-failed']);
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it('falls back to the CPU delegate when GPU creation fails', async () => {
+    mp.gpuFails = true;
+    const { stream } = fakeStream();
+    const { source, errors } = setup(async () => stream);
+    await source.start();
+    expect(errors).toEqual([]);
+    source.stop();
+    mp.gpuFails = false;
+  });
+
+  it('reports a detection failure once and stops', async () => {
+    const { stream } = fakeStream();
+    const { video, source, errors } = setup(async () => stream);
+    mp.detect.mockImplementation(() => {
+      throw new Error('bad frame');
+    });
+    await source.start();
+    video.step();
+    video.step();
+    expect(errors).toHaveLength(1);
+    expect(video.requestVideoFrameCallback).toHaveBeenCalledTimes(1);
+    mp.detect.mockReset();
+  });
+
+  it('pins the WASM URL to the package version', async () => {
+    const pkg = (await import('../../package.json')) as { default: { dependencies: Record<string, string> } };
+    expect(pkg.default.dependencies['@mediapipe/tasks-vision']).toBe(MEDIAPIPE_VERSION);
+    expect(DEFAULT_WASM_URL).toContain(`@${MEDIAPIPE_VERSION}/`);
   });
 
   it('calls onPoseLost with t and delivers no frame when no pose is found', async () => {
