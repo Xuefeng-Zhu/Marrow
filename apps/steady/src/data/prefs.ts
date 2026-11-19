@@ -1,3 +1,5 @@
+import { useCallback, useState } from 'react';
+
 /** Small preferences kept in localStorage under a `steady:` prefix. These are not results (R10.1). */
 
 export const AGE_BANDS = ['60-64', '65-69', '70-74', '75-79', '80-84', '85-89', '90-94'] as const;
@@ -46,4 +48,14 @@ export function getAcknowledged(): boolean {
 
 export function setAcknowledged(v: boolean): void {
   write('acknowledged', v ? 'yes' : null);
+}
+
+/** React hook for the saved voice preference. The choice is written to localStorage on change (R14.1). */
+export function useVoicePref(): [boolean, (on: boolean) => void] {
+  const [voice, setState] = useState<boolean>(getVoice);
+  const set = useCallback((on: boolean) => {
+    setVoice(on);
+    setState(on);
+  }, []);
+  return [voice, set];
 }

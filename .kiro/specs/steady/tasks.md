@@ -49,7 +49,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: no verdict words appear in any view model (R9.4); the non-diagnosis line is always present (R9.3); chair stand threshold depends on the age band (R9.5); `kneeFlexion` and rounding are applied (R5.5).
   - Requirements: R9.2 to R9.5.
 
-- [ ] 9. Speech service and prompt gate
+- [x] 9. Speech service and prompt gate
   - `src/services/speech.ts` (injectable `speak`, `cancel`, `available`) and `src/logic/prompts.ts` (`createPromptGate`). Voice preference hook in `src/data/prefs.ts`.
   - Tests with a fake `speechSynthesis`: cancel before speak, cancel on stop, unavailable case hides the control and still returns the text, same text is not repeated within 4 s.
   - Requirements: R4.3, R4.5, R14.
