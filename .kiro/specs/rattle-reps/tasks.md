@@ -91,7 +91,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: ordering and labels, empty state, totals computed from entries with a fixed "today", clear requires confirmation and empties storage, the screen does not import the session chunk (checked by a module graph test or by lazy boundary test), works with the in-memory fallback.
   - Keeps typecheck, test and build green. Requirements: R2.6, R11.4, R11.5, R12.4 to R12.8, R13.1 to R13.6.
 
-- [ ] 17. Accessibility pass and end-to-end keyboard tests
+- [x] 17. Accessibility pass and end-to-end keyboard tests
   - Audit and fix: landmarks, one `h1` per screen, focus order and focus on screen change, visible focus, 44 px targets (CSS check), live region politeness, no color-only information, `lang`, titles.
   - Add end-to-end style tests with `user-event` that drive picker, mode, a demo session (fake clock, scripted source), summary, history using only the keyboard.
   - Keeps typecheck, test and build green. Requirements: R14.4, R19.1 to R19.9, R6.3.
