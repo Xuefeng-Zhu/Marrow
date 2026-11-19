@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "marrow-movements",
+  "version": "0.1.0",
+  "description": "Author, validate and replay Marrow movement specs for pose-based rep counting, holds, form rules and range of motion",
+  "author": { "name": "Marrow contributors" },
+  "keywords": ["movement", "rep counter", "pose", "exercise", "range of motion", "mediapipe", "fast-check", "marrow"],
+  "homepage": "https://github.com/Xuefeng-Zhu/Marrow",
+  "repository": "https://github.com/Xuefeng-Zhu/Marrow",
+  "license": "MIT"
+}
