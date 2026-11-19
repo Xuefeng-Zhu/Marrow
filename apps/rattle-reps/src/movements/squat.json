@@ -27,7 +27,7 @@
       "metric": "kneeAngle",
       "max": 100,
       "phases": ["bottom"],
-      "debounceMs": 300,
+      "debounceMs": 600,
       "message": "Sink a little deeper"
     }
   ],

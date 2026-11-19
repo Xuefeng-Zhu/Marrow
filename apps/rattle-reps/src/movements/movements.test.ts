@@ -10,6 +10,7 @@
  * positive x offset.
  */
 import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseMovementSpec } from 'marrow-core';
 import { describe, expect, it } from 'vitest';
@@ -94,8 +95,11 @@ describe('registry', () => {
   it('the registry is the only importer of the movement JSON files', () => {
     const offenders = walk(srcDir)
       .filter((f) => /\.(ts|tsx)$/.test(f))
-      .filter((f) => !f.endsWith('registry.ts') && !f.endsWith('movements.test.ts'))
-      .filter((f) => /movements\/[\w-]+\.json|from '\.\/(squat|push-up|lunge|jumping-jack|plank)\.json'/.test(readFileSync(f, 'utf8')));
+      .filter((f) => !f.endsWith('movements/registry.ts') && !f.endsWith('movements.test.ts'))
+      .filter((f) => {
+        const specifiers = [...readFileSync(f, 'utf8').matchAll(/from\s+['"]([^'"]+\.json)['"]/g)].map((m) => m[1]!);
+        return specifiers.some((s) => resolve(dirname(f), s).startsWith(resolve(dir)));
+      });
     expect(offenders).toEqual([]);
   });
 });

@@ -14,7 +14,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - The stub `App.tsx` still has two deep imports at this point, so in the same task make the stub import nothing from `marrow-core/fixtures` or `marrow-core/specs`: render from the registry spec and a tiny inline stub frame source, keeping the stub's existing test passing (or update that test).
   - Keeps typecheck, test and build green. Requirements: R4.5, R4.6, R20.2.
 
-- [ ] 3. Fixture generator and committed fixtures
+- [x] 3. Fixture generator and committed fixtures
   - Add `scripts/make-fixtures.ts` (synthetic kinematic rig, local MediaPipe indices, type-only import of `Fixture` from `marrow-core`, Node-only otherwise) and the `make-fixtures` npm script.
   - Generate and commit `src/fixtures/{squat,push-up,lunge,jumping-jack,plank}.json` and add `src/fixtures/index.ts` (`parseFixture` on load, `getFixture`).
   - Tests: committed equals generated (byte for byte), `parseFixture` accepts each file, replay through `createEngine` gives the expected reps or hold and warning rule ids for every movement, replay twice is deeply equal and equals the fixture-player result (P35).
