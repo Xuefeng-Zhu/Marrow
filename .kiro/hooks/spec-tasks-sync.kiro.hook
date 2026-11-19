@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "name": "Spec tasks sync",
+  "description": "After an agent run, tick finished tasks in the active spec's tasks.md and note the change in docs/kiro-log.md.",
+  "version": "1",
+  "when": { "type": "agentStop" },
+  "then": { "type": "askAgent", "prompt": "Compare the work just done with the open tasks in .kiro/specs/*/tasks.md. Tick tasks that are now complete (only if their tests pass), and append one dated line to docs/kiro-log.md naming the spec, the tasks, and anything a review or property test caught." }
+}

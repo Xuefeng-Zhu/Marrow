@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "name": "Property test for new logic",
+  "description": "When a new pure-logic module is created, make sure it ships with a fast-check property test tied to a spec property.",
+  "version": "1",
+  "when": { "type": "fileCreated", "patterns": ["packages/marrow-core/src/**/*.ts", "apps/*/src/logic/**/*.ts", "apps/*/src/session/**/*.ts", "apps/*/src/streak/**/*.ts", "apps/*/src/summary/**/*.ts"] },
+  "then": { "type": "askAgent", "prompt": "A new logic module was created. If it is not a test file, check that a sibling *.test.ts exists with at least one fast-check property tagged with the matching design.md property number. If missing, write it following .kiro/steering/testing.md and run it." }
+}
