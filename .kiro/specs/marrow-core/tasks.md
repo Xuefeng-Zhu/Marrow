@@ -69,7 +69,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Add a Vitest + Testing Library smoke test: renders the canvas with an accessible name, defaults to demo mode, shows the on-device privacy text, and the mode toggle is keyboard operable.
   - Keeps typecheck, test and build green. Requirements: R9.
 
-- [ ] 13. Hello skeleton: apps/steady
+- [x] 13. Hello skeleton: apps/steady
   - Same as task 12 for `apps/steady`, with a different minimal token set (calm, high contrast, larger type).
   - Keeps typecheck, test and build green. Requirements: R9.
 

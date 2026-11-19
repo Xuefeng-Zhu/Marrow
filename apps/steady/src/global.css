@@ -1,0 +1,21 @@
+:root {
+  --bg: #ffffff;
+  --surface: #eef3f8;
+  --text: #0b1b2b;
+  --muted: #2f4357;
+  --accent: #0b4f8a;
+  --accent-text: #ffffff;
+  --bone: #0b4f8a;
+  --joint: #0b1b2b;
+  --radius: 6px;
+  --font-size: 1.25rem;
+  --font: 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--font-size);
+}
