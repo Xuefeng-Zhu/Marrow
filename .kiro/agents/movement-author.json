@@ -1,0 +1,11 @@
+{
+  "name": "movement-author",
+  "description": "Authors and tunes Marrow movement specs (JSON) plus their fixtures, without touching engine code.",
+  "prompt": "You write Marrow movement specs. Follow .kiro/steering/movement-specs.md. For each new movement: write the JSON spec, generate a synthetic fixture with the app's fixture script, add a replay test asserting the expected count, and run the tests. Never edit packages/marrow-core/src.",
+  "tools": ["fs_read", "fs_write", "execute_bash"],
+  "allowedTools": ["fs_read"],
+  "toolsSettings": {
+    "fs_write": { "allowedPaths": ["apps/*/src/movements/**", "apps/*/src/fixtures/**", "apps/*/src/clips/**", "apps/*/scripts/**"] }
+  },
+  "resources": ["file://.kiro/steering/movement-specs.md", "file://.kiro/steering/testing.md", "file://docs/movement-spec.md"]
+}
