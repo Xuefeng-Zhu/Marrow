@@ -10,7 +10,7 @@ PoseSource ──Frame──▶ LandmarkSmoother ──Frame──▶ Engine(spe
   FixturePlayer)                              └─ metrics ──▶ frame listener (overlay)
 ```
 
-Everything after the source is synchronous and deterministic. The only nondeterminism (camera, timers) lives inside sources.
+Everything after the source is synchronous and deterministic. The only nondeterminism (camera, timers) lives inside sources. Time reaches the engine only as timestamps: on frames (`push`), and on pose-lost notifications from the source (`advance`), so the engine can end a hold when the pose disappears without reading a clock.
 
 ## Repository layout
 
@@ -77,12 +77,13 @@ parseMovementSpec(json: unknown): { ok: true; spec: MovementSpec } | { ok: false
 
 // engine
 createEngine(spec: MovementSpec): Engine
-interface Engine { push(frame: Frame): MarrowEvent[]; reset(): void; readonly repCount: number; readonly phase: string | null }
+interface Engine { push(frame: Frame): MarrowEvent[]; advance(t: number): MarrowEvent[]; reset(): void; readonly repCount: number; readonly phase: string | null }
 
 // sources
 interface PoseSource {
   start(): Promise<void>; stop(): void;
   onFrame(fn: (f: Frame) => void): () => void;          // returns unsubscribe
+  onPoseLost(fn: (t: number) => void): () => void;      // no pose in a video frame at time t; no Frame is delivered
   onError(fn: (e: SourceError) => void): () => void;
 }
 createFixturePlayer(fixture: Fixture, opts?: { speed?: number; loop?: boolean; clock?: Clock }): PoseSource
@@ -129,13 +130,14 @@ Top level fields (all objects strict):
 | `version` | `1` | literal |
 | `id`, `name` | string | `id` is a slug |
 | `minVisibility` | number 0..1 | default 0.5 |
-| `hysteresis` | number >= 0 | default 5 (degrees for angle metrics, fraction of torso for others) |
+| `hysteresis` | number >= 0 | default 5, degrees. Applies to `angle` metrics |
+| `normHysteresis` | number >= 0 | default 0.05, fraction of torso length. Applies to `distance` and `offset` metrics |
 | `minRepMs` | number >= 0 | default 0 |
 | `holdGapMs` | number > 0 | default 500 |
 | `metrics` | record name to metric | `angle`, `distance` or `offset` |
 | `phases` | array, at least 2 | ordered rep cycle: `{ id, metric, min, max }` |
 | `holds` | array, optional | `{ id, phase, minMs, tickMs }` |
-| `formRules` | array, optional | `{ id, metric, min?, max?, phases?, debounceMs, message }` |
+| `formRules` | array, optional | `{ id, metric, min?, max?, hysteresis?, phases?, debounceMs, message }` (`hysteresis` is in the metric's unit and overrides the spec default) |
 | `rom` | array, optional | `{ metric, sampleOn }` where `sampleOn` is `rep`, `hold:end` or `phase:<id>` |
 
 Metric kinds:
@@ -181,14 +183,14 @@ A generic bend-and-extend cycle of one arm. It counts reps, times a hold in the 
 }
 ```
 
-Reading it: the narrowest phase is 30 wide, so hysteresis 8 is valid (limit is 15). From `extended`, the engine stays put until the angle is inside `bent` shrunk by 8, that is 38 to 62. Between 70 and 150 the engine keeps the last phase, which is how a path crosses a gap without a phase of its own. After `extended` then `bent` then `extended` again, one `rep` fires.
+Reading it: the narrowest phase is 30 wide, so hysteresis 8 is valid (limit is 15). The two phases share a metric, and `bent`'s entry band [38, 62] lies outside `extended`'s retention band [142, 188] (and the reverse), so both are reachable. The `elbow-drift` rule is in torso units, so it uses `normHysteresis` (default 0.05) and not the 8 degrees: it clears when the offset is at or below 0.20. From `extended`, the engine stays put until the angle is inside `bent` shrunk by 8, that is 38 to 62. Between 70 and 150 the engine keeps the last phase, which is how a path crosses a gap without a phase of its own. After `extended` then `bent` then `extended` again, one `rep` fires.
 
 ### Engine semantics
 
-- **Phase selection.** `current` is the phase the engine is in. A candidate phase Q is entered when the value lies in `[Q.min + h, Q.max - h]`. The current phase is kept while the value lies in `[P.min - h, P.max + h]`. Leaving the current band without entering another keeps the current phase (gaps are neutral).
+- **Phase selection.** `current` is the phase the engine is in. `h` is the hysteresis for the phase's metric kind (`hysteresis` for angles, `normHysteresis` otherwise). A candidate phase Q is entered when the value lies in `[Q.min + h, Q.max - h]` and the value is outside the current phase's retention band. The current phase is kept while the value lies in `[P.min - h, P.max + h]`, and this retention wins when both apply. With several candidates, the first in array order is entered. The schema rejects specs where, for two phases on one metric, Q's entry band lies entirely inside P's retention band, since Q would be unreachable from P. Leaving the current band without entering another keeps the current phase (gaps are neutral).
 - **Cycle tracking.** The engine keeps an index of the next expected phase. Entering the expected phase advances the index and records `entryT`. Entering the first phase when the index has reached the end completes the cycle and emits `rep` (unless it took less than `minRepMs`, when it is discarded). Entering any other phase restarts the cycle at that phase if it is the first phase, and otherwise discards the partial cycle.
-- **Holds.** A hold condition is "current phase equals `hold.phase`". Condition time accumulates from the frame where it began. At `minMs` the engine emits `hold:start`, then `hold:tick` each `tickMs`. Leaving the phase emits `hold:end` with `released`. A gap in valid frames longer than `holdGapMs` emits it with `lost-pose`.
-- **Form rules.** A rule is violated when its metric is above `max` or below `min`. The violation timer starts on the first violating frame in an applicable phase. After `debounceMs` one warning is emitted and the rule is latched. The latch clears when the value is back inside bounds by the hysteresis margin.
+- **Holds.** A hold condition is "current phase equals `hold.phase`". Condition time accumulates from the frame where it began. At `minMs` the engine emits `hold:start`, then `hold:tick` each `tickMs`. Leaving the phase emits `hold:end` with `released`. A gap in valid frames longer than `holdGapMs` emits it with `lost-pose`. The engine detects the gap from timestamps only: `advance(t)` (called by the pipeline when the source reports pose loss) and the first `push` after the gap both compare their `t` with the last valid frame's `t`. Whichever comes first emits the event once, with that `t` and a `durationMs` measured to the last valid frame. `advance(t)` changes nothing else (phase, reps, latches, ROM) and is ignored when `t` is not newer than the latest seen `t`. NaN frames are not valid frames, so a run of them also ends the hold through the next `push`.
+- **Form rules.** A rule is violated when its metric is above `max` or below `min`. The violation timer starts on the first violating frame in an applicable phase. After `debounceMs` one warning is emitted and the rule is latched. The latch clears when the value is back inside bounds by the rule's hysteresis margin, in the metric's own unit: the rule's `hysteresis` if set, else `hysteresis` for angle metrics or `normHysteresis` for distance and offset. It clears at `value <= max - h` and `value >= min + h`. The schema rejects a rule whose margin leaves no clearable value.
 - **ROM.** The engine tracks min and max of the metric since the last trigger. Triggers emit `rom:sample` and clear the extremes.
 - **NaN.** A `NaN` metric changes no state and clears nothing, except that the time gap counts toward `holdGapMs`.
 
@@ -216,9 +218,9 @@ Rules: `t` is strictly increasing and starts at 0; every frame has exactly `land
 
 ## Testing strategy
 
-- **Runner.** Vitest, test files colocated as `*.test.ts`. `fast-check` for properties P1 to P21 in `requirements.md`, at 100 runs minimum.
-- **Generators.** `src/testing/sequences.ts` builds value sequences for a spec: clean cycles (midpoint of each phase held several frames), noise bounded below the hysteresis, random walks, and `NaN` insertions. Engine properties run on metric values through synthetic frames built by a helper that places landmarks to produce a target angle, so the geometry layer is exercised as well.
-- **Time.** Fixture player and engine take timestamps from frames and an injected clock. No test uses real timers or `Date.now()`.
+- **Runner.** Vitest, test files colocated as `*.test.ts`. `fast-check` for properties P1 to P24 in `requirements.md`, at 100 runs minimum.
+- **Generators.** `src/testing/sequences.ts` builds value sequences for a spec: clean cycles (midpoint of each phase held several frames), noise bounded below `min(h, min over phases of (width / 2 - h))` so noisy midpoint samples stay in each phase's entry band, random walks, and `NaN` insertions. Engine properties run on metric values through synthetic frames built by a helper that places landmarks to produce a target angle, so the geometry layer is exercised as well.
+- **Time.** Fixture player and engine take timestamps from frames, pose-lost notifications and an injected clock. No test uses real timers or `Date.now()`.
 - **Golden test.** The committed fixture plus `elbow-cycle.json` must produce a fixed event list (3 reps, expected holds, ROM samples). It is stored inline in the test.
 - **MediaPipe.** Tested with a mocked module and mocked `getUserMedia`. No model download happens in CI.
 - **Apps.** Vitest + Testing Library smoke tests for the stubs (canvas has an accessible name, default demo mode, privacy text, keyboard-operable mode toggle).

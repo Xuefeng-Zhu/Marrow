@@ -44,14 +44,15 @@ Acceptance criteria:
 3. WHEN `stop()` is called, THEN the source SHALL deliver no further frames and SHALL release its resources (camera tracks, timers, landmarker).
 4. WHEN `start()` is called on a source that is already started, THEN the call SHALL be a no-op.
 5. The listener unsubscribe function SHALL stop delivery to that listener only.
-6. Every delivered frame SHALL carry a monotonically non-decreasing `t` in milliseconds.
+6. Every delivered frame SHALL carry a monotonically non-decreasing `t` in milliseconds. Every pose-lost notification SHALL carry a `t` that is not less than the `t` of any earlier frame or notification from the same source.
+7. The `PoseSource` interface SHALL include `onPoseLost(fn: (t: number) => void)`, returning an unsubscribe function. A source that never loses the pose (the fixture player) MAY never call it.
 
 #### R2a. MediaPipe webcam source
 
 1. WHEN started, THEN the MediaPipe source SHALL request the camera with `getUserMedia`, load the Pose Landmarker from `@mediapipe/tasks-vision`, and run detection on each video frame.
 2. IF camera permission is denied or no camera exists, THEN the source SHALL report a typed error (`camera-denied` or `camera-unavailable`) through an error channel and SHALL NOT throw from `start()`.
 3. IF the model or WASM assets fail to load, THEN the source SHALL report a typed `model-load-failed` error.
-4. WHEN no pose is detected in a video frame, THEN the source SHALL deliver no frame for it (it SHALL NOT deliver an empty landmark array).
+4. WHEN no pose is detected in a video frame, THEN the source SHALL deliver no frame for it (it SHALL NOT deliver an empty landmark array). Instead it SHALL notify its pose-lost listeners (`onPoseLost`) with the timestamp `t` of that video frame, using the same clock and monotonic ordering as delivered frames.
 5. The source SHALL NOT send video or landmarks over the network. The only network requests permitted are for the model and WASM assets.
 6. The MediaPipe source SHALL be loaded lazily so that code paths that only use fixtures do not import `@mediapipe/tasks-vision`.
 
@@ -109,7 +110,8 @@ Acceptance criteria:
 5. Landmark names SHALL be checked against the landmark name list. An unknown name SHALL be a validation issue.
 6. A phase SHALL name one metric and a `min` and `max` bound. `min` SHALL be less than or equal to `max`.
 7. Phase ids SHALL be unique. Every `holds`, `formRules` and `rom` reference to a metric or phase SHALL resolve, otherwise a validation issue SHALL be reported.
-8. `hysteresis` SHALL be a non-negative number. A spec SHALL be rejected when hysteresis is greater than half of the narrowest phase width (it would make that phase unreachable).
+8. `hysteresis` (degrees, for `angle` metrics) and `normHysteresis` (fraction of torso length, for `distance` and `offset` metrics) SHALL be non-negative numbers. A spec SHALL be rejected when the hysteresis that applies to a phase's metric kind is greater than half of that phase's width (it would make that phase unreachable). A form rule MAY set its own `hysteresis` in the unit of its metric (see R6d).
+   - Reachability: for every ordered pair of distinct phases P and Q that use the same metric, the entry band of Q (`[Q.min + h, Q.max - h]`) SHALL contain at least one value outside the retention band of P (`[P.min - h, P.max + h]`). A spec that fails this (for example two phases both `[30, 70]` on one metric) SHALL be rejected with an issue at the path of Q naming P. This guarantees that, on a shared metric, every phase can be entered from every other.
 9. Unknown top-level keys SHALL be rejected (strict objects) so that typos are caught.
 10. Parsing then serialising then parsing a valid spec SHALL give an equal spec.
 11. The core SHALL ship 1 or 2 example specs in `packages/marrow-core/specs/*.json`, and tests SHALL validate every file in that folder against the schema.
@@ -127,9 +129,9 @@ Acceptance criteria:
 
 #### R6a. Phases and hysteresis
 
-1. WHEN the engine receives its first frame with a valid metric value, THEN it SHALL select the phase whose range contains the value and emit a `phase` event with `from: null`. IF no phase contains the value, THEN it SHALL stay in the `unknown` state and emit nothing.
-2. WHILE in phase P, the engine SHALL remain in P as long as the value is within P's range widened by the hysteresis on both ends.
-3. WHEN the value enters the range of a different phase Q shrunk by the hysteresis on both ends, THEN the engine SHALL transition to Q and emit one `phase` event with `from: P`, `to: Q`.
+1. WHEN the engine receives its first frame with a valid metric value, THEN it SHALL select the phase whose range contains the value and emit a `phase` event with `from: null`. IF several phases contain the value, THEN it SHALL select the first in array order. IF no phase contains the value, THEN it SHALL stay in the `unknown` state and emit nothing.
+2. WHILE in phase P, the engine SHALL remain in P as long as the value is within P's range widened by the hysteresis on both ends. This retention rule takes precedence over R6a.3: when a value is both inside P's widened range and inside another phase's shrunk range, the engine stays in P.
+3. WHEN the value enters the range of a different phase Q shrunk by the hysteresis on both ends, and is outside P's widened range (R6a.2), THEN the engine SHALL transition to Q and emit one `phase` event with `from: P`, `to: Q`.
 4. WHEN the metric is `NaN` (low visibility), THEN the engine SHALL hold its current state and SHALL emit nothing for that frame.
 5. The engine SHALL emit at most one `phase` event per frame.
 
@@ -147,15 +149,16 @@ Acceptance criteria:
 2. WHEN the engine has been continuously in the hold condition for `minMs`, THEN it SHALL emit `hold:start` once, with the `t` at which the condition began.
 3. WHILE a hold is active, the engine SHALL emit `hold:tick` every `tickMs` with `elapsedMs`, and no more than one tick per frame.
 4. WHEN the hold condition stops being true (beyond hysteresis), THEN the engine SHALL emit `hold:end` with the total `durationMs` and a `reason` of `released` or `lost-pose`.
-5. WHEN no valid frame arrives for longer than the spec's `holdGapMs` (default 500 ms), THEN an active hold SHALL end with reason `lost-pose`.
+5. WHEN no valid frame arrives for longer than the spec's `holdGapMs` (default 500 ms), THEN an active hold SHALL end with reason `lost-pose`. The engine has no clock, so it SHALL detect this only from timestamps it is given: through `advance(t)` (see R6f) or through the `t` of the next pushed frame, whichever comes first. The `hold:end` event carries that timestamp as its `t`, and its `durationMs` is measured up to the last valid frame.
 6. WHEN the condition is true for less than `minMs`, THEN no hold events SHALL be emitted.
 
 #### R6d. Form warnings
 
 1. A `formRule` SHALL have an `id`, a `message`, a metric condition (`min` and/or `max`), an optional list of phases in which it applies, and a `debounceMs`.
 2. WHEN a rule's condition is violated for at least `debounceMs` while in an applicable phase, THEN the engine SHALL emit one `form:warning` carrying the rule `id`, `message`, the offending `value` and the `t`.
-3. The engine SHALL NOT emit the same rule again until the condition has been satisfied (beyond hysteresis) and then violated again. A rule SHALL NOT repeat on every frame.
-4. WHEN a metric is `NaN`, THEN form rules using it SHALL be neither raised nor cleared for that frame.
+3. The engine SHALL NOT emit the same rule again until the condition has been satisfied (beyond the rule's hysteresis) and then violated again. A rule SHALL NOT repeat on every frame.
+4. The rule's hysteresis SHALL be in the unit of its metric. It is the rule's own `hysteresis` if set, otherwise `hysteresis` (degrees) for an `angle` metric or `normHysteresis` for a `distance` or `offset` metric. The latch clears when the value is back inside bounds by that margin: at or above `min + h`, and at or below `max - h`. A rule whose margin would leave no clearable value (`max - h < min + h` when both bounds are set) SHALL be rejected by the schema.
+5. WHEN a metric is `NaN`, THEN form rules using it SHALL be neither raised nor cleared for that frame.
 
 #### R6e. ROM sampling
 
@@ -163,6 +166,15 @@ Acceptance criteria:
 2. WHEN the sample trigger occurs, THEN the engine SHALL emit one `rom:sample` carrying the metric name, the `min` and `max` values observed since the previous trigger, and the `t`.
 3. Observed extremes SHALL ignore `NaN` values.
 4. Reset SHALL clear the observed extremes.
+
+#### R6f. Time advance without a frame
+
+1. The engine SHALL expose `advance(t)` returning the events produced by the passage of time alone. `t` is a timestamp in the same clock as frame `t` values.
+2. `advance(t)` SHALL NOT read wall-clock time. Like `push`, its output SHALL depend only on the spec and the ordered sequence of `push` and `advance` calls since the last `reset()`.
+3. WHEN `t` is less than or equal to the latest `t` seen by the engine, THEN `advance(t)` SHALL emit nothing and change nothing.
+4. WHEN a hold is active and `t` minus the `t` of the last valid frame exceeds `holdGapMs`, THEN `advance(t)` SHALL emit `hold:end` with reason `lost-pose` (R6c.5). Otherwise it SHALL emit nothing.
+5. `advance(t)` SHALL NOT change the phase, the rep count, the partial cycle, form-rule latches or ROM extremes.
+6. WHEN `push(frame)` is called, THEN the engine SHALL first apply the same gap check using `frame.t`, so that a hold is ended with `lost-pose` even if the pipeline never called `advance`.
 
 ### R7. Pipeline wiring
 
@@ -225,12 +237,15 @@ Property-based tests SHALL be written with `fast-check` and run under Vitest. Ea
 - **P11 (rep monotonic):** for any generated frame sequence, the `count` in successive `rep` events is strictly 1, 2, 3, ... and the engine's rep count never decreases between pushes.
 - **P12 (phase order):** for any generated sequence, between two consecutive `rep` events the `phase` events visit every phase in array order. Equivalently, a sequence that never visits some phase yields zero reps.
 - **P13 (sub-hysteresis noise):** starting in a phase with the base value at least `hysteresis` inside the phase range, any noise of amplitude strictly less than `hysteresis` produces zero `phase` events after the first and zero `rep` events.
-- **P14 (full cycles):** a generated sequence of N clean cycles (each phase's midpoint value held for several frames, at a pace above `minRepMs`) yields exactly N `rep` events, regardless of frame rate and of added sub-hysteresis noise.
+- **P14 (full cycles):** a generated sequence of N clean cycles (each phase's midpoint value held for several frames, at a pace above `minRepMs`) yields exactly N `rep` events, regardless of frame rate and of added noise whose amplitude is strictly less than `min(h, min over phases of (width / 2 - h))`, where `h` is the hysteresis for the phase's metric. The second term is the distance from a phase's midpoint to its shrunk entry boundary, so noisy midpoint samples stay inside the entry band. For the worked example this bound is 7 (extended: 30 / 2 - 8).
 - **P15 (deterministic replay):** replaying one fixture twice through fresh engines, and once through the fixture player and once through `replay()`, gives deeply equal event lists.
 - **P16 (reset):** after `reset()`, replaying a sequence gives the same events as on a fresh engine.
 - **P17 (NaN neutrality):** inserting frames whose metrics are `NaN` anywhere in a sequence does not change the rep count.
 - **P18 (hold bounds):** every `hold:end.durationMs` is at least `minMs`, ticks are spaced at least `tickMs` apart, and every `hold:start` is matched by at most one `hold:end`.
 - **P19 (form debounce):** a violation shorter than `debounceMs` never produces `form:warning`, and a continuous violation produces exactly one.
+- **P22 (form rearm):** for any rule on any metric kind, after a warning, a value returned to a compliant value at least the rule's hysteresis inside its bounds (`<= max - h` or `>= min + h`) for at least one frame and then violated again for `debounceMs` produces a second warning.
+- **P23 (pose-loss timeout):** with a hold active, calling `advance(t)` with `t` more than `holdGapMs` past the last valid frame emits exactly one `hold:end` with reason `lost-pose`, and a later `push` with the same `t` emits none (no duplicate).
+- **P24 (reachability):** for any generated single-metric spec accepted by the schema, a sequence of N clean cycles through the phases yields N reps; a spec with two phases on one metric whose entry band lies inside the other's retention band is rejected.
 
 **Schema**
 
