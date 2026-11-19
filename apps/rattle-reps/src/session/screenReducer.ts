@@ -29,6 +29,7 @@ export type ScreenAction =
   | { type: 'pickCircuit'; id: string }
   | { type: 'chooseMode'; mode: Mode }
   | { type: 'setEnded'; summary: SetSummary; saved?: boolean; streakGain?: boolean }
+  | { type: 'skipStep' }
   | { type: 'again' }
   | { type: 'next' }
   | { type: 'home' }
@@ -91,6 +92,18 @@ export function screenReducer(state: Screen, action: ScreenAction): Screen {
         saved: action.saved ?? false,
         streakGain: action.streakGain ?? false,
       };
+    }
+    case 'skipStep': {
+      if (state.name !== 'session' || state.run.choice.kind !== 'circuit' || !state.run.seq) return state;
+      const { run } = state;
+      const circuit = getCircuit(run.choice.id);
+      if (!circuit || !run.seq || run.seq.phase !== 'work') return state;
+      const skipped = step(circuit, run.seq, { type: 'skipStep' });
+      if (skipped.phase === 'done') return { name: 'circuitSummary', run: { ...run, seq: skipped } };
+      // A skipped step has no result to show, so the rest is skipped with it.
+      const seq = step(circuit, skipped, { type: 'skipRest' });
+      const target = seq.phase === 'work' ? circuit.steps[seq.index]?.target : undefined;
+      return target ? { name: 'session', run: { ...run, seq, target } } : state;
     }
     case 'again':
       return state.name === 'summary' && state.run.choice.kind === 'workout'

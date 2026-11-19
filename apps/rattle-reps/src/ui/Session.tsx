@@ -24,6 +24,8 @@ export interface SessionProps {
   onHome(): void;
   /** After a camera failure: run the same workout with the demo clip. */
   onUseDemo?(): void;
+  /** Circuit only: skip this step without a result. */
+  onSkipStep?(): void;
   /** Replaces the real source factory (tests). */
   createSource?: (o: CreateSourceOptions) => Promise<SessionSource>;
 }
@@ -36,7 +38,7 @@ function ignoreShortcut(target: EventTarget | null, key: string): boolean {
   return key === ' ' && tag === 'BUTTON';
 }
 
-export default function Session({ workout, mode, target, onEnd, onHome, onUseDemo, createSource }: SessionProps) {
+export default function Session({ workout, mode, target, onEnd, onHome, onUseDemo, onSkipStep, createSource }: SessionProps) {
   const video = useRef<HTMLVideoElement>(null);
   const { settings, voice, sound, setShowVideo } = useSettings();
   const showVideo = settings.showVideo;
@@ -149,6 +151,11 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
             <button type="button" className="btn btn-warn" onClick={stop} disabled={!active}>
               Stop
             </button>
+            {onSkipStep && (
+              <button type="button" className="btn" onClick={onSkipStep}>
+                Skip step
+              </button>
+            )}
             {mode === 'camera' && (
               <button
                 type="button"

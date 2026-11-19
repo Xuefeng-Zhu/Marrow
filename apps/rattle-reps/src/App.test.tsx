@@ -91,6 +91,6 @@ describe('picker and mode screens', () => {
     expect(screen.getByTestId('demo-label')).toBeTruthy();
     await waitFor(() => expect((stop as HTMLButtonElement).disabled).toBe(false));
     await user.click(stop);
-    expect(await screen.findByRole('heading', { level: 1, name: /Coming soon/ }, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1, name: /No reps yet|set summary/ }, { timeout: 5000 })).toBeTruthy();
   });
 });

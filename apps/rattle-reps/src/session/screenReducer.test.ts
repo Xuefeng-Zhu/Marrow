@@ -25,6 +25,22 @@ const startWorkout: ScreenAction[] = [
   { type: 'chooseMode', mode: 'demo' },
 ];
 
+describe('skipStep', () => {
+  const start: ScreenAction[] = [{ type: 'pickCircuit', id: 'spooky-starter' }, { type: 'chooseMode', mode: 'demo' }];
+
+  it('moves to the next step of a circuit without a summary', () => {
+    const s = run([...start, { type: 'skipStep' }]);
+    expect(s).toMatchObject({ name: 'session', run: { seq: { phase: 'work', index: 1 } } });
+  });
+
+  it('ends at the circuit summary after the last step and is ignored outside a circuit', () => {
+    const s = run([...start, { type: 'skipStep' }, { type: 'skipStep' }, { type: 'skipStep' }]);
+    expect(s).toMatchObject({ name: 'circuitSummary', run: { seq: { phase: 'done' } } });
+    const w = run(startWorkout);
+    expect(screenReducer(w, { type: 'skipStep' })).toBe(w);
+  });
+});
+
 describe('screenReducer examples', () => {
   it('goes picker, mode, session, summary', () => {
     const s = run([...startWorkout, { type: 'setEnded', summary: summary('squat'), saved: true }]);

@@ -81,7 +81,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: an effect cleans itself up within 2 s (fake timers), no more than 3 effects start within any second, effects are `aria-hidden` and `pointer-events: none`, reduced motion removes movement classes and the text badge remains.
   - Keeps typecheck, test and build green. Requirements: R5.3, R8.5, R17.1 to R17.5, R18.1 to R18.4.
 
-- [ ] 15. Set summary and circuit flow
+- [x] 15. Set summary and circuit flow
   - Add `ui/Summary.tsx` and `ui/CircuitSummary.tsx`, the rest screen with countdown and "Skip rest", Again, Next and Home actions, the "No reps yet" state, and saving each completed set to history through the store with the streak before and after comparison. Wire `circuits/sequencer.ts` into the session flow.
   - Tests: summary values match `summarize`, zero-rep sets are not saved, demo sets are saved with `mode: "demo"` and do not extend the streak, a circuit runs all steps in order in demo mode with each step's own fixture, skip step and skip rest, leaving midway keeps completed sets, rest announcement happens at start and end only.
   - Keeps typecheck, test and build green. Requirements: R3.8, R9.1 to R9.11, R10.1 to R10.11, R11.8, R12.8.
