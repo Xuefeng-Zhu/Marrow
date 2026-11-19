@@ -4,7 +4,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
 
 When a task adds a dependency, update `package-lock.json` in the same commit (`npm install` at the repo root) so `npm ci` in CI passes.
 
-- [ ] 1. Theme tokens, app shell and disclaimer
+- [x] 1. Theme tokens, app shell and disclaimer
   - Add dev dependencies to `apps/steady/package.json`: `fake-indexeddb`, `axe-core`; runtime: `idb-keyval`. Commit the updated `package-lock.json`.
   - Rewrite `src/global.css` with the design tokens (calm light palette, `--font-size: 1.125rem`, focus ring, reduced-motion block, `.btn` with `min-height: 3rem`). Add `src/print.css` placeholder imported from `main.tsx`.
   - Replace the stub `src/App.tsx` with a shell: skip link, header with the inline skeleton mark, `<main id="content">`, persistent footer with the disclaimer and privacy text (R12.1). Keep a single placeholder "Choose a test" heading for now. Remove the stub's camera and clip code.

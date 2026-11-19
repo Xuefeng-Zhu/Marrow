@@ -1,0 +1,7 @@
+/* Print rules are added with the report screen (task 14). */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+}

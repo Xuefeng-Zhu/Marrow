@@ -1,15 +1,21 @@
 :root {
-  --bg: #ffffff;
-  --surface: #eef3f8;
-  --text: #0b1b2b;
-  --muted: #2f4357;
-  --accent: #0b4f8a;
+  --bg: #f6f9f9;
+  --surface: #ffffff;
+  --text: #12232b;
+  --muted: #34505c;
+  --accent: #0a5560;
   --accent-text: #ffffff;
-  --bone: #0b4f8a;
-  --joint: #0b1b2b;
-  --radius: 6px;
-  --font-size: 1.25rem;
-  --font: 'Segoe UI', system-ui, sans-serif;
+  --focus: #7a3e00;
+  --bone: #3e6f7a;
+  --radius: 8px;
+  --font-size: 1.125rem;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
@@ -18,4 +24,61 @@ body {
   color: var(--text);
   font-family: var(--font);
   font-size: var(--font-size);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.btn {
+  font: inherit;
+  min-height: 3rem;
+  min-width: 3rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
