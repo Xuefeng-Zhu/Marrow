@@ -22,7 +22,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tune spec thresholds from task 1 where the replay shows a mismatch, in the same task.
   - Keeps typecheck, test and build green. Requirements: R3.4, R3.5, R4.1 to R4.4, R1.6 to R1.10; property P35.
 
-- [ ] 4. Summary math
+- [x] 4. Summary math
   - Add `src/summary/summarize.ts` with types `SummaryInput`, `SetSummary`, `WarningTally`.
   - Implement rep windows, clean reps and clean percentage, TUT for reps and holds (including an open hold closed at stop), hold clean share, and warning grouping.
   - Tests: worked examples (including a warning at the set start, at a rep time, after the last rep, and a `lost-pose` hold: start 0, `hold:end` at `t = 2000` with `durationMs = 1200`, warning at 1000, expecting `cleanPct` 83 and not 17, plus a warning after `start + durationMs` adding no dirty time) plus fast-check P1 to P11 and P9b with an independent naive oracle.
