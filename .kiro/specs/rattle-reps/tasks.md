@@ -33,7 +33,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: examples across month, year and leap-day ends and a Sunday to Monday boundary, plus fast-check P12 to P22 with a day-by-day oracle, and a run under a changed `process.env.TZ`.
   - Keeps typecheck, test and build green. Requirements: R12.1 to R12.7, R12.9, R11.7 (day key); properties P12 to P22, P34.
 
-- [ ] 6. Circuit sequencing
+- [x] 6. Circuit sequencing
   - Add `src/circuits/sequencer.ts` (`init`, `step`, types), `src/circuits/presets.ts` (at least three presets, one using all five movements) and `restSecondsLeft`.
   - Tests: examples plus fast-check P23 to P29 with generated circuits and random action sequences, and P30 for presets against the registry.
   - Keeps typecheck, test and build green. Requirements: R2.2, R10.1 to R10.7, R10.10; properties P23 to P30.
