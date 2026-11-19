@@ -39,7 +39,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: unit cases (one record, same-day records, midnight boundary, empty) plus fast-check P17 to P20.
   - Requirements: R10.4, R10.5. Properties: P17 to P20.
 
-- [ ] 7. History storage and preferences
+- [x] 7. History storage and preferences
   - `src/data/history.ts` (`saveRecord`, `listRecords`, `deleteRecord`, `clearAll`, `isHistoryRecord`, `StorageUnavailableError`) with `idb-keyval` `createStore('steady', 'history')`. `src/data/prefs.ts` for voice, age band and acknowledgement.
   - Tests with `fake-indexeddb/auto`: round trip, delete, clear, corrupt entries skipped, storage failure maps to `StorageUnavailableError`; fast-check P21 for the record guard and round trip.
   - Requirements: R10.1, R10.2, R10.7 (data side), R10.8 (data side). Property: P21.
