@@ -9,7 +9,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Commit `package-lock.json`.
   - Keeps typecheck, test and build green. Requirements: R1.
 
-- [ ] 2. Landmarks and geometry
+- [x] 2. Landmarks and geometry
   - `src/types.ts` (`Landmark`, `Frame`), `src/landmarks.ts` (`LM` name map, `LANDMARK_NAMES`), `src/geometry.ts` (`angleAt`, `distance`, `bodyScale`).
   - Tests: unit cases plus fast-check P1 to P5.
   - Keeps typecheck, test and build green. Requirements: R3.
