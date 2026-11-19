@@ -1,66 +1,82 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
-
-const ctx = {
-  canvas: { width: 640, height: 480 },
-  clearRect: vi.fn(),
-  beginPath: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  stroke: vi.fn(),
-  arc: vi.fn(),
-  fill: vi.fn(),
-};
-
-beforeEach(() => {
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
-});
+import { PRESET_CIRCUITS } from './circuits/presets';
+import { WORKOUTS } from './movements/registry';
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
-describe('Rattle Reps hello skeleton', () => {
-  it('renders a canvas with an accessible name', () => {
+function setCamera(available: boolean) {
+  const getUserMedia = vi.fn();
+  Object.defineProperty(navigator, 'mediaDevices', {
+    value: available ? { getUserMedia } : undefined,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, 'isSecureContext', { value: available, configurable: true });
+  return getUserMedia;
+}
+
+describe('picker and mode screens', () => {
+  it('lists all five workouts and the preset circuits', () => {
+    setCamera(true);
     render(<App />);
-    expect(screen.getByRole('img', { name: /skeleton overlay/i })).toBeInstanceOf(HTMLCanvasElement);
+    for (const w of WORKOUTS) expect(screen.getByRole('button', { name: new RegExp(`^${w.name}`) })).toBeTruthy();
+    expect(WORKOUTS).toHaveLength(5);
+    for (const c of PRESET_CIRCUITS) expect(screen.getByRole('button', { name: new RegExp(`^${c.name}`) })).toBeTruthy();
+    expect(screen.getByText(/never uploaded/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /history/i })).toBeTruthy();
+    expect(screen.getByTestId('streak-badge')).toBeTruthy();
   });
 
-  it('defaults to demo clip mode', () => {
-    render(<App />);
-    expect(screen.getByRole('button', { name: 'Demo clip' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Camera' }).getAttribute('aria-pressed')).toBe('false');
-  });
-
-  it('states that processing is on-device and nothing is uploaded', () => {
-    render(<App />);
-    expect(screen.getByText(/runs on your device/i).textContent).toMatch(/no video is uploaded/i);
-  });
-
-  it('mode toggle and play control work from the keyboard', async () => {
+  it('focuses the h1 and sets the title on every screen change', async () => {
+    setCamera(true);
     const user = userEvent.setup();
     render(<App />);
-    const camera = screen.getByRole('button', { name: 'Camera' });
-    const demo = screen.getByRole('button', { name: 'Demo clip' });
-    // No camera exists here, so selecting it reports an error instead of prompting.
-    Object.defineProperty(navigator, 'mediaDevices', { value: undefined, configurable: true });
-    await user.tab();
-    expect(document.activeElement).toBe(demo);
-    await user.tab();
-    expect(document.activeElement).toBe(camera);
-    await user.tab();
-    const playPause = screen.getByRole('button', { name: 'Pause' });
-    expect(document.activeElement).toBe(playPause);
-    await user.keyboard(' ');
-    expect(playPause.textContent).toBe('Play');
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 }));
+    await user.click(screen.getByRole('button', { name: /^Squat/ }));
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.textContent).toMatch(/Squat/);
+    expect(document.activeElement).toBe(h1);
+    expect(document.title).toMatch(/Squat/);
+  });
 
-    await user.tab({ shift: true });
-    expect(document.activeElement).toBe(camera);
-    await user.keyboard('{Enter}');
-    expect(camera.getAttribute('aria-pressed')).toBe('true');
-    expect(demo.getAttribute('aria-pressed')).toBe('false');
+  it('opens the mode screen for a workout and for a circuit, and goes back', async () => {
+    setCamera(true);
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /^Spooky Starter/ }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Spooky Starter/);
+    expect(screen.getByText(/downloads a small pose model/i).textContent).toMatch(/storage\.googleapis\.com/);
+    expect(screen.getByText(/not medical advice/i)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /camera placement/i })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Pick your torment');
+  });
+
+  it('Demo clip never touches getUserMedia', async () => {
+    const gum = setCamera(true);
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /^Plank/ }));
+    await user.click(screen.getByRole('button', { name: 'Demo clip' }));
+    expect(gum).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { level: 1, name: /how do you want/i })).toBeNull();
+  });
+
+  it('disables the camera with an explanation when mediaDevices is missing', async () => {
+    setCamera(false);
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /^Lunge/ }));
+    const camera = screen.getByRole('button', { name: 'Camera' }) as HTMLButtonElement;
+    expect(camera.disabled).toBe(true);
+    expect(camera.getAttribute('aria-describedby')).toBe('camera-reason');
+    expect(document.getElementById('camera-reason')?.textContent).toMatch(/secure|camera/i);
+    expect((screen.getByRole('button', { name: 'Demo clip' }) as HTMLButtonElement).disabled).toBe(false);
   });
 });

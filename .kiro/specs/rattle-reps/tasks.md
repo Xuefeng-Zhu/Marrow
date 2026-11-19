@@ -60,7 +60,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: WCAG contrast ratios for every text, background and focus pair (4.5:1 text, 3:1 large text and focus), `useReducedMotion` follows a mocked `matchMedia` change.
   - Keeps typecheck, test and build green. Requirements: R16.1 to R16.7, R18.1, R18.3, R19.1 to R19.3, R19.9.
 
-- [ ] 11. Picker and mode screens
+- [x] 11. Picker and mode screens
   - Add `ui/Picker.tsx` (workouts, preset circuits, streak badge placeholder, history link, privacy line) and `ui/Mode.tsx` (Camera and Demo clip, model download notice, camera placement tip, insecure-context handling, "not medical advice" line). Wire them into `App.tsx` with the screen reducer, focus management and document title.
   - Tests: lists all five workouts and the presets, activating an entry opens the mode screen, Demo clip does not touch `getUserMedia`, camera disabled with an explanation when `navigator.mediaDevices` is missing, focus moves to the `h1`.
   - Keeps typecheck, test and build green. Requirements: R2.1 to R2.7, R3.1, R14.4, R14.5, R15.1, R15.4, R21.6.

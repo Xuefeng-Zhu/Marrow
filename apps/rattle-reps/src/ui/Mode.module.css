@@ -1,0 +1,26 @@
+.choices {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  margin: 1rem 0;
+}
+
+.choice {
+  background: var(--bg-raised);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.privacy,
+.note {
+  color: var(--muted);
+}
+
+.reason {
+  color: var(--warn);
+  font-weight: 800;
+}
+
+.tips ul {
+  padding-left: 1.25rem;
+}
