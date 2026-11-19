@@ -47,14 +47,14 @@ export function App({ speech: injected }: AppProps = {}) {
   const [voice, setVoice] = useVoicePref();
   const [start] = useState(() => ({ ...initialSession, screen: getAcknowledged() ? ('home' as const) : ('about' as const) }));
   const session = useSession(start);
-  const { state, snapshot, outcome, prompt } = session;
+  const { state, snapshot, outcome, prompt, promptSeq } = session;
   const voiceOn = useRef(voice);
   voiceOn.current = voice;
 
   // Speak each new prompt and each countdown number, one at a time (R14.1, R14.2).
   useEffect(() => {
     if (prompt && state.screen === 'running' && voiceOn.current) speech.speak(prompt);
-  }, [prompt, state.screen, speech]);
+  }, [prompt, promptSeq, state.screen, speech]);
   const countdown = snapshot?.countdown ?? null;
   useEffect(() => {
     if (countdown !== null && state.screen === 'countdown' && voiceOn.current) speech.speak(String(countdown));

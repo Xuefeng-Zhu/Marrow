@@ -13,6 +13,8 @@ export function useSession(initial = initialSession) {
   const [snapshot, setSnapshot] = useState<RunSnapshot | null>(null);
   const [outcome, setOutcome] = useState<RunOutcome | null>(null);
   const [prompt, setPrompt] = useState('');
+  /** Counts accepted prompt events so a repeated identical instruction is spoken again. */
+  const [promptSeq, setPromptSeq] = useState(0);
   const controller = useRef<RunController | null>(null);
   /** The latest processed frame of the run, for the overlay. */
   const frameRef: MutableRefObject<Frame | null> = useRef<Frame | null>(null);
@@ -33,7 +35,10 @@ export function useSession(initial = initialSession) {
       test: TEST_BY_ID[state.testId],
       mode: state.mode,
       onUpdate: setSnapshot,
-      onPrompt: setPrompt,
+      onPrompt: (text) => {
+        setPrompt(text);
+        setPromptSeq((n) => n + 1);
+      },
       onFrame: (f) => {
         frameRef.current = f;
       },
@@ -72,6 +77,7 @@ export function useSession(initial = initialSession) {
     snapshot,
     outcome,
     prompt,
+    promptSeq,
     frameRef,
     chooseTest: (testId: TestId, mode?: SourceMode) => dispatch({ type: 'choose-test', testId, ...(mode ? { mode } : {}) }),
     setMode: (mode: SourceMode) => dispatch({ type: 'set-mode', mode }),

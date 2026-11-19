@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clearAll, listRecords, saveRecord, StorageUnavailableError, type HistoryRecord } from '../data/history';
@@ -65,6 +65,23 @@ describe('ResultCard', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ testId: 'chair-stand', value: 11, source: 'demo', kind: 'count', stoppedEarly: false });
     expect(screen.queryByRole('button', { name: 'Save result' })).toBeNull();
+  });
+
+  it('ignores a second activation while the save is in flight', async () => {
+    let release: () => void = () => undefined;
+    saveMock.mockImplementationOnce(async (r) => {
+      await new Promise<void>((res) => (release = res));
+      return (await vi.importActual<typeof import('../data/history')>('../data/history')).saveRecord(r);
+    });
+    card('chair-stand', 11, { stop: 'window' });
+    const button = screen.getByRole('button', { name: 'Save result' }) as HTMLButtonElement;
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(button.disabled).toBe(true);
+    release();
+    await screen.findByRole('status');
+    expect(saveMock).toHaveBeenCalledTimes(1);
+    expect(await listRecords()).toHaveLength(1);
   });
 
   it('shows the message and keeps the card printable when storage fails (R10.8)', async () => {

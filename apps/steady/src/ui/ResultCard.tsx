@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { listRecords, saveRecord, StorageUnavailableError, type HistoryRecord } from '../data/history';
 import { describeAsymmetry } from '../logic/asymmetry';
 import type { ResultViewModel } from '../logic/result';
@@ -13,7 +13,7 @@ interface Props {
   onBack: () => void;
 }
 
-type SaveState = 'idle' | 'saved' | 'failed';
+type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
 
 function newId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -50,8 +50,12 @@ export function ResultCard({ model, onTryAgain, onBack }: Props) {
     };
   }, []);
 
+  const saving = useRef(false);
+
   async function onSave() {
-    if (model.value === null) return;
+    if (model.value === null || saving.current) return;
+    saving.current = true;
+    setSave('saving');
     const record: HistoryRecord = {
       id: newId(),
       testId: model.testId,
@@ -69,6 +73,8 @@ export function ResultCard({ model, onTryAgain, onBack }: Props) {
     } catch (e) {
       if (!(e instanceof StorageUnavailableError)) console.warn('Saving failed', e);
       setSave('failed');
+    } finally {
+      saving.current = false;
     }
   }
 
@@ -128,7 +134,7 @@ export function ResultCard({ model, onTryAgain, onBack }: Props) {
 
       <div className={styles.row}>
         {model.saveable && save !== 'saved' && save !== 'failed' && (
-          <button type="button" className="btn btn-primary" onClick={() => void onSave()}>
+          <button type="button" className="btn btn-primary" disabled={save === 'saving'} onClick={() => void onSave()}>
             Save result
           </button>
         )}

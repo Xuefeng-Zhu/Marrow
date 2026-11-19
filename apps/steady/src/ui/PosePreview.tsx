@@ -64,6 +64,11 @@ export function PosePreview({ test, mode, onError }: Props) {
             if (samples.length > 600) samples.splice(0, samples.length - 600);
             setReady(isReady(samples));
           }),
+          s.onPoseLost(() => {
+            samples.length = 0;
+            paintFrame(canvas.current, null);
+            setReady(false);
+          }),
           s.onError((e) => {
             if (!cancelled) onErrorRef.current(e.code);
           }),
