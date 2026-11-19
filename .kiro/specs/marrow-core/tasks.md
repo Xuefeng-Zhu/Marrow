@@ -63,7 +63,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: with a fake canvas context, verify visibility skipping, empty frames and call counts.
   - Keeps typecheck, test and build green. Requirements: R8.
 
-- [ ] 12. Hello skeleton: apps/rattle-reps
+- [x] 12. Hello skeleton: apps/rattle-reps
   - Replace the `.gitkeep` with a Vite + React 18 + TypeScript app: `package.json` (depends on `marrow-core`), `vite.config.ts` honouring `VITE_BASE`, `index.html`, `src/main.tsx`, `src/App.tsx`, and a small CSS module with tokens.
   - Copy the core fixture into the app's public assets at build time through a Vite plugin or an npm script (do not deep-import core paths).
   - Add a Vitest + Testing Library smoke test: renders the canvas with an accessible name, defaults to demo mode, shows the on-device privacy text, and the mode toggle is keyboard operable.
