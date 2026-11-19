@@ -80,6 +80,7 @@ A `rom:sample` is skipped when no valid value was observed since the previous tr
 
 - `PoseSource` has `start()`, `stop()`, `onFrame(fn)`, `onPoseLost(fn)` and `onError(fn)`. Each subscription returns an unsubscribe function. `onPoseLost` receives the timestamp of a video frame with no pose, and no `Frame` is delivered for it.
 - `createFixturePlayer(fixture, { speed, loop, clock })` plays a fixture. Frames keep their recorded `t`, offset on each loop so `t` keeps increasing. `speed` scales only the schedule. Pass a `Clock` (`setTimeout` and `clearTimeout`) to run it without real timers. The player never calls `onPoseLost` listeners.
+- `createMediaPipeSource({ modelUrl, wasmUrl, video, camera })` is the live webcam source (MediaPipe Pose Landmarker, on-device). `@mediapipe/tasks-vision` is imported lazily on `start()`, so fixture-only code never loads it. `start()` never throws: failures arrive through `onError` as `camera-denied`, `camera-unavailable` or `model-load-failed`. Frames with no pose call `onPoseLost(t)` and deliver no `Frame`. Only the model and WASM assets are fetched.
 - `replay(fixture)` yields the frames synchronously, for tests and offline analysis.
 - `parseFixture(json)` validates a fixture and throws `FixtureError` (with `field` and `frameIndex`) on a bad one.
 

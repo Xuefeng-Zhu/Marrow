@@ -53,7 +53,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: end-to-end test that the committed fixture and spec yield the expected events through the pipeline, with smoothing on and off, and a test with a stub source that fires `onPoseLost` during a hold and gets `hold:end` with `lost-pose`.
   - Keeps typecheck, test and build green. Requirements: R7.
 
-- [ ] 10. MediaPipe webcam source
+- [x] 10. MediaPipe webcam source
   - Add `@mediapipe/tasks-vision` as a core dependency. `src/sources/mediapipeSource.ts` with dynamic import, typed errors, `onPoseLost(t)` for frames without a pose, and options for model and WASM asset URLs.
   - Tests: with the MediaPipe module and `getUserMedia` mocked, cover start, stop, permission denied, model load failure, and no-pose frames (no `Frame` delivered, `onPoseLost` called with the frame's `t`). Add a test that importing the public entry does not load `@mediapipe/tasks-vision` eagerly.
   - Keeps typecheck, test and build green. Requirements: R2, R2a.
