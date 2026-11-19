@@ -63,7 +63,9 @@ src/
     useSession.ts               hook: pipeline wiring, event log, live view state
     sourceFactory.ts            demo vs camera PoseSource creation (lazy camera)
     cues.ts                     pure: MarrowEvent -> UI cue (text, kind, ttl)
-    pausableSource.ts           PoseSource wrapper: drop frames while paused, shift t
+    pausableSource.ts           camera pause: PoseSource wrapper that drops frames while paused and shifts t
+    pausableClock.ts            demo pause: Clock for createFixturePlayer that suspends and resumes its timer
+    depthCheck.ts               pure: rom:sample -> per-rep shallow-depth warning (section 3)
   ui/
     Picker.tsx Mode.tsx Session.tsx Summary.tsx CircuitSummary.tsx History.tsx
     SkeletonCanvas.tsx Counter.tsx CueBar.tsx Effects.tsx Toggles.tsx
@@ -99,6 +101,7 @@ Notes:
 - The plank is filmed from the side. The `off` and `plank` phases exist because a spec needs at least two phases. Reps of the plank spec are ignored by the app. The app reads `hold:*` events only.
 - Each spec uses `minRepMs` (for example 700 ms for squats) to drop bounces, `minVisibility` 0.5, and `debounceMs` of 250 to 400 ms on rules so that fast passes through a depth do not warn.
 - Rules for shallow depth rely on the `bottom` phase band being wider than the "good depth" bound. A shallow rep still counts as a rep, and is flagged, which is what the clean-rep percentage measures.
+- Shallow depth across repeated reps. The core latches a warning and clears it only when the metric is compliant by the hysteresis. Leaving the rule's phase does not clear it. For consecutive shallow squats that alternate between about 105 degrees at the bottom and 170 degrees standing, the value never reaches `max - hysteresis` (about 95), so the core emits `shallow-depth` for the first shallow rep only. The core cannot be changed in this feature, so the app adds a per-rep depth check. The squat and push-up specs declare `rom: [{ "metric": <depth metric>, "sampleOn": "rep" }]`. At each `rep` the core emits a `rom:sample` (same `t` as the `rep`) whose `min` is the smallest angle reached during that rep. `session/depthCheck.ts` holds the per-workout bound (squat 100, push-up 90, the same numbers as the rules, which stay in the JSON so the first shallow rep still gets an immediate cue). For each `rom:sample` of a depth metric with `min` greater than the bound, if no `form:warning` with the rule id `shallow-depth` has `t` in the current rep window `(previous rep t, this t]`, the app synthesizes `{ type: 'form:warning', t: sample.t, ruleId: 'shallow-depth', message, value: min }`. The synthesized event goes through the same path as core events (event log, cue, voice, summary). Result: every shallow rep has exactly one `shallow-depth` warning in its window, whether the core emitted it or the app did. A synthesized warning is emitted at the end of the rep, so its cue arrives slightly later than a core one. The same function is applied in replay tests so that fixtures and live sessions agree.
 - The 2D pose is only an approximation. The thresholds are about "obviously bad" form, not coaching precision. The UI says "form hints, not medical advice" on the mode screen.
 
 `movements/registry.ts` reads each JSON through `parseMovementSpec` and throws at startup in tests (and logs in production) if one fails. It exports `WORKOUTS: readonly WorkoutDef[]` and `getWorkout(id)`.
@@ -160,15 +163,15 @@ Each clip is 15 to 30 s at 20 fps and tells a small story so that the demo shows
 
 | Fixture | Content | Expected events (asserted) |
 | --- | --- | --- |
-| squat | 5 reps: 3 clean, 1 with knees caving, 1 shallow | 5 `rep`, warnings `knees-caving` and `shallow-depth` once each |
-| push-up | 5 reps: 4 clean, 1 with sagging hips | 5 `rep`, warning `hips-sagging` |
+| squat | 6 reps: 3 clean, 1 with knees caving, 2 consecutive shallow (bottom about 105 degrees, standing about 170 degrees) | 6 `rep`. Core events: `knees-caving` once, `shallow-depth` once (first shallow rep only, because of the latch). After `depthCheck`: `shallow-depth` twice, one in each shallow rep window, so `cleanReps` is 3 |
+| push-up | 6 reps: 3 clean, 1 with sagging hips, 2 consecutive shallow (bottom about 100 degrees elbow) | 6 `rep`. Core: `hips-sagging` once, `shallow-depth` once. After `depthCheck`: `shallow-depth` twice, `cleanReps` is 3 |
 | lunge | 5 reps: 4 clean, 1 with the knee past the ankle | 5 `rep`, warning `knee-past-ankle` |
 | jumping-jack | 8 reps, 1 with low arms | 8 `rep`, warning `arms-low` |
 | plank | 20 s hold with a brief sag at about 12 s | one `hold:start`, `hold:tick`s, one `hold:end` (`released`), warning `hips-sagging` |
 
 Exact counts are fixed by the generator and asserted in `fixtures.test.ts`. If tuning changes them, the test constants change together with the generator in the same task.
 
-`fixtures.test.ts` does three things for every movement: (1) the committed file equals `serializeFixture(generate(...))` byte for byte, (2) `parseFixture` accepts it, (3) `replay(fixture)` through `createEngine(spec)` yields the expected rep or hold counts and warning rule ids, twice with deeply equal results (P35).
+`fixtures.test.ts` does three things for every movement: (1) the committed file equals `serializeFixture(generate(...))` byte for byte, (2) `parseFixture` accepts it, (3) `replay(fixture)` through `createEngine(spec)`, with the events passed through `depthCheck`, yields the expected rep or hold counts and warning rule ids and counts (including the consecutive shallow reps above), twice with deeply equal results (P35). The test also asserts the raw core output (one `shallow-depth`), so a future core change that re-arms rules is noticed.
 
 `fixtures/index.ts` imports each JSON, validates with `parseFixture` once, and exports `getFixture(movementId)`. It is the only module that imports fixture JSON. A repo test greps `src/` and `scripts/` for the pattern `from 'marrow-core/` and for `marrow-core/(fixtures|specs)` and fails on any match (R4.6).
 
@@ -188,7 +191,10 @@ Steps:
 2. `createPipeline({ source, spec: workout.spec })`. Subscribe with `on('rep' | 'phase' | 'hold:start' | 'hold:tick' | 'hold:end' | 'form:warning')`, `onFrame` for drawing, and the source's `onError` for failures (R3.7).
 3. Every event is appended to an event log (`MarrowEvent[]`) and mapped to a `Cue` by `cues.ts`. The log and the start and stop times feed `summarize`.
 4. The set ends on: the target reached (R5.4), the fixture ending, or the user pressing Stop. The controller calls `pipeline.stop()`, and closes any open hold at the stop time (R9.5).
-5. Pause (R19.5): the core's fixture player rewinds on `stop()` and `pipeline.stop()` removes listeners, so pause cannot be stop and start. Instead `session/pausableSource.ts` wraps any `PoseSource` (public type only). While paused it drops frames. After resume it subtracts the total paused time from every frame `t`, so timestamps stay continuous and increasing, and paused time never enters a `durationMs` or TUT. A pose-lost notification while paused is dropped. Because no frames arrive during the pause, the core ends an active hold with `lost-pose` on the first frame after resume if the pause exceeded `holdGapMs`, and the UI says "Pause ends the current hold". A rep in progress simply continues after resume.
+5. Pause (R19.5): the core's fixture player rewinds on `stop()` and `pipeline.stop()` removes listeners, so pause cannot be stop and start. The two sources need different mechanisms, because a live camera keeps producing frames while a fixture player keeps advancing its own frame index and timer regardless of listeners. Dropping the demo player's frames would discard that part of the clip, and pausing through the remaining clip would consume the whole fixture.
+   - Camera: `session/pausableSource.ts` wraps the `PoseSource` (public type only). While paused it drops frames. After resume it subtracts the total paused time from every frame `t`, so timestamps stay continuous and increasing, and paused time never enters a `durationMs` or TUT. A pose-lost notification while paused is dropped. Because no frames arrive during the pause, the core ends an active hold with `lost-pose` on the first frame after resume if the pause exceeded `holdGapMs`, and the UI says "Pause ends the current hold" in camera mode. A rep in progress simply continues after resume.
+   - Demo clip: the app does not wrap the demo source. `createFixturePlayer(fixture, { clock })` accepts an injectable `Clock` (exported type from `marrow-core`), so `session/pausableClock.ts` provides a `Clock` that can be suspended. On `pause()` it clears the pending timer and records the remaining delay (`due time - now`, never below 0). On `resume()` it schedules the same callback with the remaining delay. While suspended, `setTimeout` calls (none are expected, since the player schedules only after a delivery) are queued and started on resume. The player therefore stops advancing its frame index during the pause and continues from the next undelivered frame, so no part of the clip is lost. Frame `t` values are the recorded ones, with no shifting, and no frames are dropped. The clip cannot end while paused. A hold open at pause continues after resume without a `lost-pose`, because the next frame follows the last one by the normal recorded interval, so the "Pause ends the current hold" note is not shown in demo mode.
+   - `useSession` holds a `pause()` and `resume()` pair chosen by `sourceFactory` for the mode (the wrapper's controls for camera, the clock's for demo) and sets `status` to `paused` and back. Circuit steps in demo mode create a new player and a new clock per step, so a pause never carries over to the next step.
 6. Cleanup on unmount stops the pipeline, cancels the animation frame loop, cancels speech, and closes the audio context if one was created (R14.6).
 
 Live view state (`useReducer`): `reps`, `holdElapsedMs`, `phase`, `cue`, `poseLost`, `status` (`starting | running | paused | ended | error`). The reducer is pure, driven by the same `MarrowEvent`s.
@@ -216,6 +222,7 @@ Definitions:
 
 - `reps` = `count` of the last `rep` event, else 0 (rep workouts). Hold workouts: `reps = 0`.
 - Rep windows: for the k-th rep event at time `t_k`, the window is `(t_{k-1}, t_k]` with `t_0 = startT`, but a warning whose time equals `startT` belongs to the first window, so the first window is `[startT, t_1]`. A warning at time `w` belongs to the window with the smallest `k` such that `w <= t_k`, if `w >= startT`. A warning with `w > t_last` belongs to no window.
+- Warnings include the ones synthesized by `depthCheck` (section 3), so persistent shallow reps are not counted as clean. `summarize` takes the already merged event list and stays unaware of where a warning came from.
 - `cleanReps` = number of windows with no warning. `cleanPct = reps > 0 ? round(100 * cleanReps / reps) : 0`.
 - TUT, rep workouts = sum of `durationMs` over `rep` events. This counts only time actually spent moving through a rep and ignores pauses between reps. It is explained in the UI as "time under tension".
 - TUT, hold workouts = sum of `hold:end.durationMs`, plus `stopT - start` for a `hold:start` without a matching `hold:end` (never below 0). `holdMs` equals this sum.
@@ -299,7 +306,7 @@ type Screen =
   | { name: 'history' };
 ```
 
-`screenReducer(state, action)` is pure. Actions: `pickWorkout`, `pickCircuit`, `chooseMode`, `setEnded`, `again`, `next`, `home`, `openHistory`, `back`. Invalid actions return the same state (P31). Circuit state is held inside `run.seq` and advanced with the sequencer.
+`screenReducer(state, action)` is pure. Actions: `pickWorkout`, `pickCircuit`, `chooseMode`, `setEnded`, `again`, `next`, `home`, `openHistory`, `back`. Invalid actions return the same state (P31). `again` is valid only from `summary` and enters `session` with the same run. `next` is valid only from `summary` of a circuit step and enters `session` for the next step. Starting a new run is only possible through `chooseMode` from `mode`. Circuit state is held inside `run.seq` and advanced with the sequencer.
 
 `App.tsx` renders the screen. On every screen change an effect sets `document.title` and focuses the screen's `h1` (`tabIndex={-1}`) (R14.4). There is no router dependency. The session, mode and summary screens are not addressable by URL, which is acceptable because the flow is short and a refresh returns to the picker.
 
@@ -412,6 +419,6 @@ The final values are checked by `theme.test.ts`, which computes WCAG contrast ra
 | Demo sets do not count toward the streak | Prevents gaming the streak without a camera, and keeps the demo usable for judges. They are still saved and shown with a label. |
 | App-level zod avoided | Hand-written validators keep the dependency list short. The codec is covered by property tests. |
 | Clock and timezone bugs | Day keys are strings captured at save time, and all week math uses UTC day numbers, so tests do not depend on the host timezone. |
-| Hold pause semantics | Pause is an app-side wrapper that drops frames and shifts later timestamps. A hold open at pause ends with `lost-pose` on the first frame after resume if the pause exceeded `holdGapMs`. Documented in the UI as "Pause ends the current hold". |
+| Hold pause semantics | Camera: pause is an app-side wrapper that drops frames and shifts later timestamps. A hold open at pause ends with `lost-pose` on the first frame after resume if the pause exceeded `holdGapMs`. Documented in the UI as "Pause ends the current hold". Demo clip: pause suspends the fixture player's timer through an injected `Clock`, so no frames are dropped, the clip continues where it stopped, and a hold survives the pause. |
 | Bundle size | Session screen lazy loaded, no icon or font libraries, inline SVG only. |
 | Changes to core or Steady | None. If a core gap is found (for example no landmark transform for rattle), it is recorded as a follow-up, not fixed here. |

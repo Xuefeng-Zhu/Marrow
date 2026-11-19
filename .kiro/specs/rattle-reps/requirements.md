@@ -45,6 +45,8 @@ Acceptance criteria:
 10. The plank spec SHALL include a rule for hips sagging and a rule for hips piking up.
 11. Every spec SHALL have an `id` equal to its file name without the extension.
 12. The app SHALL load specs through a single registry module, and no other module SHALL import a movement JSON file directly.
+13. The squat and push-up specs SHALL each declare a `rom` entry on the depth metric sampled on `rep`, so that the depth reached in every rep is available to the app.
+14. WHEN a rep of a squat or push-up is shallower than the depth bound of its shallow-depth rule, THEN the rep window SHALL contain exactly one `shallow-depth` warning, including for consecutive shallow reps where the core's latched rule does not warn again, and such a rep SHALL NOT count as clean.
 
 ### R2. Workout and circuit picker
 
@@ -298,7 +300,7 @@ Acceptance criteria:
 2. Text SHALL have a contrast ratio of at least 4.5:1 against its background, and large text at least 3:1 (WCAG AA), and a test of the theme tokens SHALL check this.
 3. Interactive targets SHALL be at least 44 by 44 CSS pixels.
 4. The session screen SHALL provide keyboard shortcuts for "Stop" (Escape) and "Pause" (Space) that are shown on the screen, and SHALL NOT trigger a shortcut while a text field has focus.
-5. Pausing SHALL stop frame processing and SHALL stop the time-under-tension and hold clocks. Resuming SHALL continue from the paused state.
+5. Pausing SHALL stop frame processing and SHALL stop the time-under-tension and hold clocks. Resuming SHALL continue from the paused state. In Demo clip mode, WHILE paused, the demo clip SHALL NOT advance, and no frame of the clip SHALL be skipped or consumed, so that resuming continues from the first undelivered frame.
 6. Live regions SHALL follow R5.7 and R6.5, and the canvas SHALL have `aria-hidden="true"` and an adjacent text alternative (current rep count and last cue).
 7. Toggles (voice, sound, show my video) SHALL be real buttons or checkboxes with an accessible name and a pressed or checked state.
 8. No information SHALL be conveyed by color alone (R6.3).
@@ -375,7 +377,7 @@ Properties are tested with fast-check (Vitest). The pure modules they cover are 
 
 **Screen flow and storage**
 
-- **P31 (screen reducer):** for any action sequence, the screen state is always one of the defined screens, and "session" is reachable only from "mode".
+- **P31 (screen reducer):** for any action sequence, the screen state is always one of the defined screens. A new run starts only from "mode" through `chooseMode`. "session" is otherwise entered only from "summary" through `again` (same run) or, for a circuit with steps left, `next` (next step), as required by R14.2. No other transition into "session" exists.
 - **P32 (history cap):** appending any number of entries to a history of any size keeps at most 500 entries, keeps the newest, and preserves order.
 - **P33 (storage decode):** decoding arbitrary JSON never throws, and returns either a valid versioned history or an empty one.
 - **P34 (day key round trip):** for any epoch time and any timezone offset used in the tests, the day key is a valid `YYYY-MM-DD` string whose parts are the local calendar date.

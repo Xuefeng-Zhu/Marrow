@@ -3,11 +3,11 @@
 Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at the repo root (Node 22, as in CI). Each task is one small commit. Tests are written in the same task as the code they cover. Requirement and property numbers refer to `requirements.md`. Only `apps/rattle-reps` changes (plus `package-lock.json`, README and docs where a task says so). No task edits `packages/marrow-core` or `apps/steady`.
 
 - [ ] 1. Movement specs and registry
-  - Add `src/movements/{squat,push-up,lunge,jumping-jack,plank}.json` with the metrics, phases, holds and form rules from the design.
+  - Add `src/movements/{squat,push-up,lunge,jumping-jack,plank}.json` with the metrics, phases, holds and form rules from the design, including the `rom` entry sampled on `rep` for the squat and push-up depth metric.
   - Add `src/movements/registry.ts` (parse with `parseMovementSpec`, export `WORKOUTS` and `getWorkout`) and `src/movements/workouts.ts` (targets, phase cues, voice lines, blurbs, camera tips).
   - Confirm the `offset` sign convention in `packages/marrow-core/src/engine/metrics.ts` (read only) and note it in the test file.
-  - Tests: every JSON in the folder parses, ids equal file names, each spec has the required rules and messages of at most 40 characters, the plank has a hold, the registry is the only importer of the JSON.
-  - Keeps typecheck, test and build green. Requirements: R1.
+  - Tests: every JSON in the folder parses, ids equal file names, each spec has the required rules and messages of at most 40 characters, squat and push-up declare the `rep` rom entry, the plank has a hold, the registry is the only importer of the JSON.
+  - Keeps typecheck, test and build green. Requirements: R1.1 to R1.13.
 
 - [ ] 2. Hygiene tests for core imports
   - Add a test that scans `src/` and `scripts/` and fails on any import of a `marrow-core/` sub-path.
@@ -18,6 +18,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Add `scripts/make-fixtures.ts` (synthetic kinematic rig, local MediaPipe indices, type-only import of `Fixture` from `marrow-core`, Node-only otherwise) and the `make-fixtures` npm script.
   - Generate and commit `src/fixtures/{squat,push-up,lunge,jumping-jack,plank}.json` and add `src/fixtures/index.ts` (`parseFixture` on load, `getFixture`).
   - Tests: committed equals generated (byte for byte), `parseFixture` accepts each file, replay through `createEngine` gives the expected reps or hold and warning rule ids for every movement, replay twice is deeply equal and equals the fixture-player result (P35).
+  - The squat and push-up clips include two consecutive shallow reps (design section 4). The replay test asserts both the raw core output (one `shallow-depth`) and the merged output after `depthCheck` (two). Because `depthCheck` lands in task 8, task 3 asserts the raw core output and the rep counts, and the merged assertion is added in task 8.
   - Tune spec thresholds from task 1 where the replay shows a mismatch, in the same task.
   - Keeps typecheck, test and build green. Requirements: R3.4, R3.5, R4.1 to R4.4, R1.6 to R1.10; property P35.
 
@@ -45,12 +46,13 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
 
 - [ ] 8. Screen reducer and cues
   - Add `src/session/screenReducer.ts` (pure screen state machine with circuit state held in the run), and `src/session/cues.ts` (`cueFor`, `nextCue` with 2 s minimum visibility, `shouldEmit` rate limiter, milestone rule).
-  - Tests: reducer examples and P31, cue mapping for every event type, warning replacement and expiry, rate limiter never exceeds 3 per second.
-  - Keeps typecheck, test and build green. Requirements: R5.2, R6.1 to R6.5, R14.1 to R14.3, R17.3; property P31.
+  - Add `src/session/depthCheck.ts` (pure `withDepthWarnings(events, workoutId)`: adds one `shallow-depth` warning per shallow rep window from `rom:sample`, skipping windows where the core already warned) and extend the fixture replay test with the merged assertions (consecutive shallow reps give two warnings, `cleanReps` excludes both).
+  - Tests: reducer examples and P31 (including `again` and circuit `next` from `summary` into `session`, and no other way into `session`), depthCheck examples (consecutive shallow reps alternating 105 and 170 degrees, a shallow rep after a clean one, no duplicate when the core warned) and a property that each rep window has at most one `shallow-depth` warning after merging, cue mapping for every event type, warning replacement and expiry, rate limiter never exceeds 3 per second.
+  - Keeps typecheck, test and build green. Requirements: R5.2, R6.1 to R6.5, R1.14, R14.1 to R14.3, R17.3; property P31.
 
 - [ ] 9. Session controller and sources
-  - Add `src/session/sourceFactory.ts` (demo with `createFixturePlayer`, camera with a dynamic import and `createMediaPipeSource`, secure-context check), `src/session/pausableSource.ts`, and `src/session/useSession.ts` (pipeline wiring, event log, live view reducer, end on target, fixture end or stop, cleanup).
-  - Tests with a scripted fake `PoseSource`: counter equals the last `rep` count, set ends at the target, stop closes an open hold, unmount stops the pipeline and removes listeners, camera error exposes the demo fallback, pause drops frames and keeps `t` increasing (add a property: for any pause pattern, output `t` is strictly increasing and no `durationMs` includes paused time), demo mode never calls `getUserMedia`.
+  - Add `src/session/sourceFactory.ts` (demo with `createFixturePlayer`, camera with a dynamic import and `createMediaPipeSource`, secure-context check), `src/session/pausableSource.ts` (camera pause), `src/session/pausableClock.ts` (demo pause through the injectable `Clock` of `createFixturePlayer`), and `src/session/useSession.ts` (pipeline wiring, every core event passes through `withDepthWarnings` before the event log and cues, event log, live view reducer, end on target, fixture end or stop, cleanup).
+  - Tests with a scripted fake `PoseSource`: counter equals the last `rep` count, set ends at the target, stop closes an open hold, unmount stops the pipeline and removes listeners, camera error exposes the demo fallback, camera pause drops frames and keeps `t` increasing (add a property: for any pause pattern, output `t` is strictly increasing and no `durationMs` includes paused time), demo pause with a fake clock delivers every fixture frame exactly once and in order, with the recorded `t`, for any pause pattern (including a pause longer than the remaining clip, which must not end the clip), and a demo hold open at pause continues after resume, demo mode never calls `getUserMedia`.
   - Keeps typecheck, test and build green. Requirements: R3.2, R3.3, R3.6, R3.7, R3.10, R5.1 to R5.6, R14.6, R19.5.
 
 - [ ] 10. Theme tokens and base layout
