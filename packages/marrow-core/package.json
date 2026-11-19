@@ -1,0 +1,23 @@
+{
+  "name": "marrow-core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fixtures/*": "./fixtures/*",
+    "./specs/*": "./specs/*"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "make-fixture": "node --experimental-strip-types scripts/make-fixture.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  }
+}
