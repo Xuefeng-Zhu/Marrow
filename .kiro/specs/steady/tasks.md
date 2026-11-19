@@ -59,32 +59,32 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: reducer cannot reach `running` except from `countdown` and cannot start before the safety confirmation (R3.3); readiness needs one continuous second (R3.4); a headless controller test runs every demo clip to its result with a fake clock and checks the result equals the designed outcome; ROM run ends after 3 reps, on Done, or at 60 s (R5.1); camera errors surface typed messages and offer the demo (R3.5); `stop` releases the source (R4.7).
   - Requirements: R3.4 to R3.6, R4, R5.1, R7.1, R8.2.
 
-- [ ] 11. Home, About and Setup screens
+- [x] 11. Home, About and Setup screens
   - `src/ui/Home.tsx` (grouped tests, left/right choices, last result, source choice, voice toggle, history link), `src/ui/About.tsx` (first-launch acknowledgement, R12.2), `src/ui/Setup.tsx` (guidance, safety notice with confirm, camera preview with skeleton and "Ready" indicator, error and demo fallback). Focus moves to each `<h1>`.
   - Tests with Testing Library: choose a test, Start stays disabled until the safety confirmation, keyboard-only flow, demo needs no permission prompt (the camera source factory is not called), first-launch About appears once.
   - Requirements: R2, R3, R12.2, R13.7, R15.4.
 
-- [ ] 12. Countdown, Run and Result screens
+- [x] 12. Countdown, Run and Result screens
   - `src/ui/Countdown.tsx`, `src/ui/Run.tsx` (canvas overlay via `drawSkeleton`, large `aria-live` prompt, live value, time, Stop and Done, Pause and Play for the demo preview), `src/ui/ResultCard.tsx` (value, context, asymmetry when the other side exists for the day, Save, Try again, Back). Wire saving to `data/history.ts`.
   - Tests: demo flow for every test from Home to a saved result using the committed clips and fake timers (R13.3); prompts are `role="status"`; Stop is reachable by keyboard; speech cancelled on leaving; reduced-motion removes countdown animation; "Foot was not lifted" and "No movement detected" are not saved; a storage failure shows the message and keeps the card printable.
   - Requirements: R4, R5, R7, R8, R9.1, R9.6, R9.7, R13.3, R13.6.
 
-- [ ] 13. History and trend chart
+- [x] 13. History and trend chart
   - `src/ui/History.tsx` (per test and side lists, delete one with confirmation, delete all with confirmation, empty state, "Include demo clips" toggle) and `src/ui/TrendChart.tsx` (inline SVG with title, desc, table alternative, shape markers).
   - Tests: shows newest first; chart points equal `aggregateByDay` output; table matches the points; deleting asks for confirmation; empty state text; demo toggle filters records and labels demo rows.
   - Requirements: R10.3, R10.6, R10.7, R10.9, R15.8.
 
-- [ ] 14. Printable progress report
+- [x] 14. Printable progress report
   - `src/ui/Report.tsx` (date range, per test summary, asymmetry, chart and table, sources, disclaimer and privacy) and the full `src/print.css`. "Print or save as PDF" calls `window.print()`.
   - Tests: summaries match `summarize`; asymmetry shown only for same-day left and right pairs; no records message with print still available; `window.print` is called on click; `print.css` contains the hide, `break-inside: avoid` and black-on-white rules (lint-style check).
   - Requirements: R11, R12.3.
 
-- [ ] 15. Accessibility pass
+- [x] 15. Accessibility pass
   - Run `axe-core` on every screen in jsdom (colour-contrast rule off, covered by the token test). Fix findings. Check 48px target rules, 200% zoom layout (no fixed pixel widths), focus order, skip link and `lang` on `index.html`.
   - Tests: `src/a11y.test.tsx` with an axe helper over all screens; tab-order test for Home, Setup, Run and Result; CSS lint test for the reduced-motion block and the target size rule.
   - Requirements: R15, R16.
 
-- [ ] 16. Docs and production build ready for Vercel
+- [x] 16. Docs and production build ready for Vercel
   - Write `apps/steady/README.md` (what it is, run, demo mode, how to add a test, disclaimer, privacy, deploy). Add a Steady section to the root `README.md` if the structure expects one. Keep `vercel.json` (output `dist`, SPA rewrite) and confirm `VITE_BASE` is honoured.
   - Verify: `npm ci`, `npm run typecheck`, `npm test` and `npm run build` at the root all exit 0; `apps/steady/dist` exists with `index.html`, hashed assets and the clips bundled; a test or script check shows the demo path does not fetch `@mediapipe/tasks-vision` or any network URL (the MediaPipe import stays dynamic and out of the entry chunk); no `console.error` output in tests; no files outside `apps/steady`, `README.md` and the lockfile changed.
   - Mark all tasks above as done in this file.

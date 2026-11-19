@@ -1,4 +1,4 @@
-import { createPipeline, type MarrowEvent, type Pipeline, type PoseSource, type SourceError } from 'marrow-core';
+import { createPipeline, type Frame, type MarrowEvent, type Pipeline, type PoseSource, type SourceError } from 'marrow-core';
 import type { OneEuroOptions } from 'marrow-core';
 import { createChairStandCounter, type ChairStandCounter } from '../logic/chairStand';
 import { createPromptGate } from '../logic/prompts';
@@ -56,6 +56,8 @@ export interface ControllerOptions {
   /** Text to show and speak. Already passed through the 4 second prompt gate (R4.5). */
   onPrompt?: (text: string) => void;
   onCountdown?: (n: number) => void;
+  /** Each processed frame, for the skeleton overlay. */
+  onFrame?: (f: Frame) => void;
   onSourceError?: (e: SourceError) => void;
   onEnd?: (o: RunOutcome) => void;
 }
@@ -302,9 +304,10 @@ export function createRunController(opts: ControllerOptions): RunController {
     checkStance();
   }
 
-  function onFrameProcessed(f: { frame: { t: number }; metrics: Record<string, number>; phase: string | null }): void {
+  function onFrameProcessed(f: { frame: Frame; metrics: Record<string, number>; phase: string | null }): void {
     if (phase !== 'running') return;
     const t = f.frame.t;
+    opts.onFrame?.(f.frame);
     lastT = t;
     lastWall = sched.now();
     armLost();

@@ -1,0 +1,204 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.fieldset {
+  border: 2px solid var(--muted);
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  padding: 0.5rem 1rem 1rem;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+}
+
+.choice input {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+}
+
+.group h2 {
+  margin-bottom: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.summary {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.voice {
+  min-width: 3rem;
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border-left: 6px solid var(--accent);
+  background: var(--surface);
+}
+
+.safety {
+  padding: 0.5rem 1rem 1rem;
+  border: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.error {
+  padding: 0.75rem 1rem;
+  border: 3px solid var(--focus);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.ok {
+  font-weight: 600;
+}
+
+.steps li {
+  margin-bottom: 0.5rem;
+}
+
+.preview {
+  margin-top: 1.5rem;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border: 2px solid var(--muted);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.ready {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.notReady {
+  color: var(--muted);
+}
+
+.count {
+  margin: 1rem 0;
+  font-size: 8rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  color: var(--accent);
+}
+
+.pulse {
+  display: inline-block;
+  animation: pulse 1s ease-out;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1.3);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.prompt {
+  min-height: 2.5em;
+  margin: 1rem 0 0.5rem;
+  font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.live {
+  margin: 0.25rem 0;
+  font-size: 1.75rem;
+}
+
+.big {
+  min-height: 4rem;
+  min-width: 8rem;
+  font-size: 1.5rem;
+}
+
+.card {
+  padding: 1rem 1.5rem;
+  border: 2px solid var(--muted);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.value {
+  margin: 0.5rem 0;
+  font-size: 1.75rem;
+}
+
+.valueNumber {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--focus);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.chart {
+  margin: 1rem 0;
+}
+
+.chartSvg {
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  color: var(--accent);
+}
+
+.chartTable {
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.chartTable th,
+.chartTable td {
+  border: 1px solid var(--muted);
+  padding: 0.25rem 0.75rem;
+  text-align: left;
+}
+
+.summaryList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.summaryList dd {
+  margin: 0;
+  font-weight: 600;
+}

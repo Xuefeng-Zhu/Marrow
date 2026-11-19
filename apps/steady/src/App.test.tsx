@@ -1,11 +1,21 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { setAcknowledged } from './data/prefs';
 import { App } from './App';
 
-afterEach(cleanup);
+beforeEach(() => setAcknowledged(true));
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 describe('Steady app shell', () => {
+  it('offers the footer About button on Home', () => {
+    render(<App />);
+    expect(screen.getByRole('button', { name: 'About Steady' })).toBeTruthy();
+  });
+
   it('has a main landmark with the content id and a heading', () => {
     render(<App />);
     const main = screen.getByRole('main');
@@ -24,6 +34,8 @@ describe('Steady app shell', () => {
   it('makes the skip link the first tab stop and points it at main', async () => {
     const user = userEvent.setup();
     render(<App />);
+    // Focus starts on the screen heading, so go back to the top of the page first.
+    (document.activeElement as HTMLElement).blur();
     await user.tab();
     const skip = screen.getByRole('link', { name: /skip to main content/i });
     expect(document.activeElement).toBe(skip);

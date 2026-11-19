@@ -28,6 +28,8 @@ Each app opens in demo clip mode, so no camera is needed. Choose **Camera** to u
 
 Build an app for a sub-path with `VITE_BASE`, for example `VITE_BASE=/rattle-reps/ npm run build -w apps/rattle-reps`. The output is `apps/<app>/dist`. Each app has a `vercel.json` (SPA rewrite, output `dist`).
 
+Steady has its own guide: [apps/steady/README.md](apps/steady/README.md) (demo mode, how to add a test, privacy, deploy).
+
 More: [movement spec reference](docs/movement-spec.md), [architecture](docs/architecture.md), [core API](packages/marrow-core/README.md).
 
 ## Kiro

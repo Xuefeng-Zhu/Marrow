@@ -4,5 +4,5 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
-  test: { environment: 'jsdom', globals: false },
+  test: { environment: 'jsdom', globals: false, setupFiles: ['./src/noConsoleError.setup.ts'] },
 });
