@@ -96,7 +96,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Add end-to-end style tests with `user-event` that drive picker, mode, a demo session (fake clock, scripted source), summary, history using only the keyboard.
   - Keeps typecheck, test and build green. Requirements: R14.4, R19.1 to R19.9, R6.3.
 
-- [ ] 18. Remove the stub and update docs
+- [x] 18. Remove the stub and update docs
   - Delete the remaining stub code in `App.tsx` and rewrite `App.test.tsx` to cover the app shell. Confirm there are no `marrow-core/fixtures` or `marrow-core/specs` imports left anywhere in the app.
   - Update the root `README.md` Rattle Reps section, add `apps/rattle-reps/README.md` (what it is, demo-clip mode, how to add a movement, how to regenerate fixtures with `npm run make-fixtures -w apps/rattle-reps`, privacy notes), and update `docs/architecture.md` with a pointer to this spec.
   - Keeps typecheck, test and build green. Requirements: R4.5, R20.1, R20.2, R20.5, R20.6.

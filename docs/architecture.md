@@ -14,3 +14,5 @@ PoseSource -> LandmarkSmoother -> Engine(spec) -> events
 `packages/marrow-core` is plain TypeScript with no UI framework. The apps in `apps/` are Vite and React sites that import it only through the `marrow-core` entry. No video or landmarks are uploaded.
 
 For the full design, requirements and task list, see [`.kiro/specs/marrow-core/`](../.kiro/specs/marrow-core/design.md).
+
+The Rattle Reps app (screens, session flow, storage, streak, deployment) is specified in [`.kiro/specs/rattle-reps/`](../.kiro/specs/rattle-reps/design.md) and described in [`apps/rattle-reps/README.md`](../apps/rattle-reps/README.md).

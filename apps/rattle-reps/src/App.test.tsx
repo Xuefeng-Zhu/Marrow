@@ -94,3 +94,14 @@ describe('picker and mode screens', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /No reps yet|set summary/ }, { timeout: 5000 })).toBeTruthy();
   });
 });
+
+describe('app shell', () => {
+  it('starts on the picker with one banner, one main and no leftover stub text', () => {
+    setCamera(true);
+    render(<App />);
+    expect(screen.getAllByRole('banner')).toHaveLength(1);
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Pick your torment');
+    expect(document.body.textContent).not.toMatch(/hello|coming soon/i);
+  });
+});

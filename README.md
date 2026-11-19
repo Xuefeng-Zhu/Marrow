@@ -12,6 +12,8 @@ Kiroween 2026 · Skeleton Crew entry · built with [Kiro](https://kiro.dev).
 | `apps/rattle-reps` | **Rattle Reps**: a webcam home-workout coach that counts reps and calls out form. |
 | `apps/steady` | **Steady**: physio range-of-motion and balance checks for older adults, with a printable progress report. |
 
+Rattle Reps is a playful rattling-skeleton coach: pick a workout or a preset circuit, and the skeleton overlay counts reps, flags form, rattles on every rep (synthesized sounds, off until you unmute) and saves sets and a weekly streak on your device. See [`apps/rattle-reps/README.md`](apps/rattle-reps/README.md).
+
 Both apps also ship a **demo clip mode**, so you can try them with no webcam.
 
 ## Quick start
