@@ -186,6 +186,7 @@ Acceptance criteria:
 2. The pipeline SHALL also expose each processed frame (smoothed landmarks plus current metric values) to a frame listener, so that an app can draw the overlay.
 3. The pipeline SHALL work identically for the MediaPipe source and the fixture player.
 4. `pipeline.stop()` SHALL stop the source and remove all listeners.
+5. WHEN the source reports pose loss through `onPoseLost(t)`, THEN the pipeline SHALL call `engine.advance(t)` and dispatch the resulting events to the typed listeners.
 
 ### R8. Skeleton overlay helper
 
