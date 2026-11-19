@@ -1,6 +1,6 @@
 # PBT sweep
 
-Done by following the `property-hunter` agent prompt (`.kiro/agents/property-hunter.json`) by hand, because custom agents cannot be launched as sub-agents in this environment. Specs: `.kiro/specs/{marrow-core,steady,rattle-reps}`. Property numbers come from each spec's `requirements.md`.
+Done by following the `property-hunter` agent prompt (`.kiro/agents/property-hunter.md` (then `.json`)) by hand, because custom agents cannot be launched as sub-agents in this environment. Specs: `.kiro/specs/{marrow-core,steady,rattle-reps}`. Property numbers come from each spec's `requirements.md`.
 
 Result: every numbered property is covered by a P-tagged test. All are `fc.assert` properties except the three listed under "Justified example tests". No existing test was weakened; this PR only adds tests.
 
