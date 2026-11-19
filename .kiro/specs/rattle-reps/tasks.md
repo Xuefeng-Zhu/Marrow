@@ -28,7 +28,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: worked examples (including a warning at the set start, at a rep time, after the last rep, and a `lost-pose` hold: start 0, `hold:end` at `t = 2000` with `durationMs = 1200`, warning at 1000, expecting `cleanPct` 83 and not 17, plus a warning after `start + durationMs` adding no dirty time) plus fast-check P1 to P11 and P9b with an independent naive oracle.
   - Keeps typecheck, test and build green. Requirements: R9.1 to R9.9; properties P1 to P11 and P9b.
 
-- [ ] 5. Day keys and weekly streak
+- [x] 5. Day keys and weekly streak
   - Add `src/streak/dayKey.ts` (`toDayKey`, `dayNumber`, `weekIndex`, `weekStart`) and `src/streak/streak.ts` (`qualifies`, `computeStreak`, exported constants for the minimums).
   - Tests: examples across month, year and leap-day ends and a Sunday to Monday boundary, plus fast-check P12 to P22 with a day-by-day oracle, and a run under a changed `process.env.TZ`.
   - Keeps typecheck, test and build green. Requirements: R12.1 to R12.7, R12.9, R11.7 (day key); properties P12 to P22, P34.
