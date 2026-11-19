@@ -4,13 +4,15 @@
 
 Kiroween 2026 · Skeleton Crew entry · built with [Kiro](https://kiro.dev).
 
+**Try it live:** [Rattle Reps](https://marrow-rattle-reps.vercel.app/) · [Steady](https://marrow-steady.vercel.app/) (no install; demo clip mode works without a webcam)
+
 ## The skeleton and two apps
 
 | Folder | What it is |
 | --- | --- |
 | `packages/marrow-core` | The skeleton: pose source (webcam or recorded clip), joint-angle math, smoothing, and a JSON movement-rules engine that emits rep / hold / form events. |
-| `apps/rattle-reps` | **Rattle Reps**: a webcam home-workout coach that counts reps and calls out form. |
-| `apps/steady` | **Steady**: physio range-of-motion and balance checks for older adults, with a printable progress report. |
+| `apps/rattle-reps` | **[Rattle Reps](https://marrow-rattle-reps.vercel.app/)**: a webcam home-workout coach that counts reps and calls out form. |
+| `apps/steady` | **[Steady](https://marrow-steady.vercel.app/)**: physio range-of-motion and balance checks for older adults, with a printable progress report. |
 
 Rattle Reps is a playful rattling-skeleton coach: pick a workout or a preset circuit, and the skeleton overlay counts reps, flags form, rattles on every rep (synthesized sounds, off until you unmute) and saves sets and a weekly streak on your device. See [`apps/rattle-reps/README.md`](apps/rattle-reps/README.md).
 
