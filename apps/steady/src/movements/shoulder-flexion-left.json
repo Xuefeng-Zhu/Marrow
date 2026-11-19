@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "shoulder-flexion-left",
+  "name": "Shoulder flexion, left arm",
+  "minVisibility": 0.5,
+  "hysteresis": 8,
+  "minRepMs": 1500,
+  "metrics": {
+    "shoulderAngle": {
+      "kind": "angle",
+      "points": [
+        "leftHip",
+        "leftShoulder",
+        "leftElbow"
+      ],
+      "plane": "xy"
+    }
+  },
+  "phases": [
+    {
+      "id": "down",
+      "metric": "shoulderAngle",
+      "min": 0,
+      "max": 30
+    },
+    {
+      "id": "raised",
+      "metric": "shoulderAngle",
+      "min": 90,
+      "max": 180
+    }
+  ],
+  "rom": [
+    {
+      "metric": "shoulderAngle",
+      "sampleOn": "phase:down"
+    }
+  ]
+}

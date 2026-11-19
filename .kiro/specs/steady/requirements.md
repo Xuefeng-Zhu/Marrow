@@ -31,7 +31,7 @@ Acceptance criteria:
 
 1. The app SHALL define seven tests, each with a JSON movement spec in `apps/steady/src/movements/`: `shoulder-flexion-left`, `shoulder-flexion-right`, `knee-flexion-left`, `knee-flexion-right`, `chair-stand`, `single-leg-stance-left`, `single-leg-stance-right`.
 2. Every spec file SHALL pass `parseMovementSpec` from `marrow-core`. A unit test SHALL validate every `*.json` file in the folder.
-3. The shoulder flexion specs SHALL measure the angle hip, shoulder, elbow of the chosen side. A raised arm gives a larger angle. The app SHALL report that angle as the flexion in degrees.
+3. The shoulder flexion specs SHALL measure the angle hip, shoulder, elbow of the chosen side in the image plane (the `shoulderAngle` metric sets `"plane": "xy"` explicitly, and a test checks it). A raised arm gives a larger angle. The app SHALL report that angle as the flexion in degrees.
 4. The knee flexion specs SHALL measure the angle hip, knee, ankle of the chosen side. The app SHALL report flexion as `180 - angle`, so a straight leg is 0 degrees.
 5. The chair stand spec SHALL use the knee or hip angle of one leg with the ordered phases `seated` then `standing`, so that one engine `rep` is one full sit, stand and sit cycle.
 6. The single-leg stance specs SHALL define a `lifted` phase (the raised foot is clearly off the floor, measured as an ankle height offset in torso units), a `grounded` phase, a hold in `lifted`, and a form rule on the standing leg's horizontal hip-to-ankle offset for sway.
@@ -84,7 +84,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-1. A ROM run SHALL end when the user has completed three engine `rep` events, when the user presses "Done" or "Stop", or after 60 seconds, whichever comes first.
+1. A ROM run SHALL end when the user has completed three engine `rep` events, when the user presses "Done" or "Stop", or after 60 seconds, whichever comes first. The 60 seconds SHALL be enforced by a timer as well as by frame timestamps, so the run ends even if no more frames arrive.
 2. The result SHALL be the peak flexion in degrees: the largest valid flexion among the `rom:sample` events and the largest valid flexion seen in the frames since the last sample (so that a raise held at the end is not lost).
 3. A flexion value SHALL be valid when it is a finite number in the range 0 to 180 degrees inclusive. Invalid values SHALL be ignored.
 4. IF no valid value exists, THEN the run SHALL end with a "No movement detected" outcome and SHALL NOT be saved.
@@ -108,10 +108,10 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-1. A chair stand run SHALL last exactly 30 seconds of pipeline time, measured from the first frame timestamp after the countdown, and SHALL show the remaining seconds.
-2. The count SHALL equal the number of engine `rep` events with timestamps inside the 30-second window, plus one if, at the end of the window, the engine phase is `standing` (the user is up and not yet seated again, which the standard test counts when the stand is more than halfway complete).
+1. A chair stand run SHALL last exactly 30 seconds of pipeline time, measured from the first frame timestamp after the countdown, and SHALL show the remaining seconds. The end of the window SHALL be enforced by a timer as well as by frame timestamps, so the run ends and the final count is fixed even if no more frames arrive.
+2. The final count SHALL equal the number of engine `rep` events with timestamps inside the 30-second window, plus one if, at the end of the window, the engine phase is `standing` (the user is up and not yet seated again, which the standard test counts when the stand is more than halfway complete). The extra one SHALL be added only when the window closes and SHALL NOT be shown while the window is open. Cycles the engine discards as faster than the spec's `minRepMs` produce no `rep` and no bonus.
 3. Events with a timestamp after the 30-second window SHALL NOT be counted.
-4. The count SHALL never decrease during a run and SHALL never exceed the number of `rep` events plus one.
+4. The count SHALL never decrease during a run (including when the window closes and after a discarded fast cycle) and SHALL never exceed the number of in-window `rep` events plus one.
 5. WHEN the user presses "Stop" early, THEN the run SHALL be saved only if the user confirms, and the result card SHALL say "Stopped early".
 6. The result card SHALL show the count and the unit "stands in 30 seconds".
 
@@ -122,7 +122,7 @@ Acceptance criteria:
 Acceptance criteria:
 
 1. WHEN the engine emits `hold:start` for the stance hold, THEN the timer SHALL start from the hold's start time (the time the lifted condition began, as given by the event).
-2. The test SHALL stop at the first of these conditions: (a) `hold:end` with reason `released` (foot down); (b) `form:warning` for the sway rule (sway beyond the threshold); (c) `hold:end` with reason `lost-pose`; (d) the timer reaches the 30-second cap; (e) the user presses "Stop".
+2. The test SHALL stop at the first of these conditions: (a) `hold:end` with reason `released` (foot down); (b) `form:warning` for the sway rule (sway beyond the threshold); (c) `hold:end` with reason `lost-pose`; (d) the timer reaches the 30-second cap, which a timer SHALL enforce even if no more frames arrive; (e) the user presses "Stop". A `form:warning` for the sway rule that arrives before `hold:start` but with a timestamp at or after the hold's start time SHALL count as a sway stop at that warning's time. A warning timestamped before the hold's start time SHALL be ignored.
 3. The result in seconds SHALL be the time from the hold start to the stop condition, never negative and never more than 30, rounded down to one decimal.
 4. IF the test ends before any `hold:start` was emitted, THEN the result SHALL be "Foot was not lifted" and SHALL NOT be saved.
 5. The result card SHALL say why the test stopped in plain words (for example "Your foot touched down", "You swayed past the limit", "You reached 30 seconds").
@@ -260,11 +260,11 @@ The following properties SHALL be tested with fast-check in `apps/steady/src/log
 - **P6 (asymmetry, symmetric).** `asymmetry(a, b) = asymmetry(b, a)`.
 - **P7 (asymmetry, range).** For non-negative finite `a` and `b`, the result is between 0 and 100 inclusive, and is 0 when `a = b`.
 - **P8 (asymmetry, scale invariance).** `asymmetry(k*a, k*b)` equals `asymmetry(a, b)` for any `k > 0`, within floating point tolerance.
-- **P9 (chair stand, count formula).** For any list of `rep` events with non-decreasing timestamps and any final phase, the count equals the number of reps with `t <= 30000` plus one if the final phase is `standing`.
-- **P10 (chair stand, monotone).** Feeding events one by one, the running count never decreases.
+- **P9 (chair stand, count formula).** For any list of `rep` and `phase` events with non-decreasing timestamps, once the window is closed the count equals the number of reps inside the window plus one if the phase at the window end is `standing`.
+- **P10 (chair stand, monotone).** Feeding events one by one and then closing the window, the running count never decreases.
 - **P11 (chair stand, late events).** Events after the 30-second window never change the count.
 - **P12 (chair stand, bound).** The count is at least 0 and at most the number of in-window reps plus one.
-- **P13 (stance, stop is first).** For any event sequence, the result stops at the first stop condition in time order, and events after it do not change the result or the stop reason.
+- **P13 (stance, stop is first).** For any event sequence, the result stops at the first stop condition in time order (including a sway warning that arrived before `hold:start` with `t` at or after the start), and events after it do not change the result or the stop reason.
 - **P14 (stance, bounds).** The result seconds is between 0 and 30 inclusive.
 - **P15 (stance, no hold).** A sequence with no `hold:start` never gives a result, whatever the other events.
 - **P16 (stance, reason).** The stop reason equals the type of the first stop event, and `lost-pose`, `released`, `sway`, `cap` and `user` are the only reasons.

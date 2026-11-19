@@ -4,57 +4,57 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
 
 When a task adds a dependency, update `package-lock.json` in the same commit (`npm install` at the repo root) so `npm ci` in CI passes.
 
-- [ ] 1. Theme tokens, app shell and disclaimer
+- [x] 1. Theme tokens, app shell and disclaimer
   - Add dev dependencies to `apps/steady/package.json`: `fake-indexeddb`, `axe-core`; runtime: `idb-keyval`. Commit the updated `package-lock.json`.
   - Rewrite `src/global.css` with the design tokens (calm light palette, `--font-size: 1.125rem`, focus ring, reduced-motion block, `.btn` with `min-height: 3rem`). Add `src/print.css` placeholder imported from `main.tsx`.
   - Replace the stub `src/App.tsx` with a shell: skip link, header with the inline skeleton mark, `<main id="content">`, persistent footer with the disclaimer and privacy text (R12.1). Keep a single placeholder "Choose a test" heading for now. Remove the stub's camera and clip code.
   - Tests: update `src/App.test.tsx` (footer text present, skip link first in tab order, main landmark). Add `src/contrast.test.ts` that parses `global.css` tokens and checks the 7:1 and 4.5:1 pairs (R15.2).
   - Requirements: R12.1, R15.1, R15.2, R15.4, R16.
 
-- [ ] 2. Movement specs and test catalogue
+- [x] 2. Movement specs and test catalogue
   - Add the seven JSON specs in `src/movements/` (design, "Movement specs").
   - Add `src/tests.ts` with `TestDef` and the catalogue (specs, titles, summaries, units, limits, required landmarks, setup steps, prompt scripts). Clips are added in task 3, so use a typed `clip` field that is filled in then (keep the build green by adding the field in task 3).
   - Tests: `src/movements/specs.test.ts` runs `parseMovementSpec` on every `*.json` in the folder (via `import.meta.glob`) and checks that each catalogue entry maps to a valid spec and that catalogue ids equal the file names (R1.1, R1.2, R1.7). Add a test that no source file in `apps/steady/src` imports a deep `marrow-core` path (R1.8).
   - Requirements: R1.
 
-- [ ] 3. Demo clip generator and clips
+- [x] 3. Demo clip generator and clips
   - Add `scripts/make-clips.ts` (pattern: `packages/marrow-core/scripts/make-fixture.ts`) that writes seven fixtures to `src/clips/`, with the designed outcomes from the design table exported from a small shared module the tests import. Add an npm script `make-clips`.
   - Commit the generated clips. Add the `clip` field to the catalogue entries.
   - Tests: every clip passes `parseFixture`; regenerating reproduces the committed files; replaying each clip through `createEngine` or `replay()` with the matching spec gives the designed events (rep counts, hold start and end times, sway warning time, `rom:sample` extremes), so the specs are tuned against the clips (R13.1, R13.2, R13.4).
   - Requirements: R13.1, R13.2, R13.4, R13.5.
 
-- [ ] 4. ROM and asymmetry logic with properties
+- [x] 4. ROM and asymmetry logic with properties
   - `src/logic/rom.ts` (`isValidAngle`, `kneeFlexion`, `selectPeak`) and `src/logic/asymmetry.ts` (`asymmetryPct`, `describeAsymmetry`).
   - Tests: unit cases (empty input, NaN only, equal sides, zero sides) plus fast-check P1 to P8.
   - Requirements: R5.2 to R5.5, R6. Properties: P1 to P8.
 
-- [ ] 5. Chair stand counter and stance timer with properties
+- [x] 5. Chair stand counter and stance timer with properties
   - `src/logic/chairStand.ts` (`createChairStandCounter`) and `src/logic/stance.ts` (`createStanceTimer`) as in the design.
   - Tests: unit cases including the +1 standing rule, late events, sway before hold start, `lost-pose`, the 30-second cap and `stopByUser`; fast-check P9 to P16 with generators for event sequences with non-decreasing `t`.
   - Add tests that feed the events produced by replaying the task 3 clips through the counter and the timer and match the designed outcome (R7, R8, R13.4).
   - Requirements: R7, R8. Properties: P9 to P16.
 
-- [ ] 6. Trend aggregation with properties
+- [x] 6. Trend aggregation with properties
   - `src/logic/trend.ts` (`aggregateByDay`, `summarize`) with an injectable time-zone offset.
   - Tests: unit cases (one record, same-day records, midnight boundary, empty) plus fast-check P17 to P20.
   - Requirements: R10.4, R10.5. Properties: P17 to P20.
 
-- [ ] 7. History storage and preferences
+- [x] 7. History storage and preferences
   - `src/data/history.ts` (`saveRecord`, `listRecords`, `deleteRecord`, `clearAll`, `isHistoryRecord`, `StorageUnavailableError`) with `idb-keyval` `createStore('steady', 'history')`. `src/data/prefs.ts` for voice, age band and acknowledgement.
   - Tests with `fake-indexeddb/auto`: round trip, delete, clear, corrupt entries skipped, storage failure maps to `StorageUnavailableError`; fast-check P21 for the record guard and round trip.
   - Requirements: R10.1, R10.2, R10.7 (data side), R10.8 (data side). Property: P21.
 
-- [ ] 8. Reference context and result model
+- [x] 8. Reference context and result model
   - `src/reference.ts` with sourced entries, verified against the cited sources (omit any number that cannot be verified). `src/logic/result.ts` builds a view model from a finished run (value, unit, stop reason text, "Stopped early", source label, reference lines, the fixed non-diagnosis line).
   - Tests: no verdict words appear in any view model (R9.4); the non-diagnosis line is always present (R9.3); chair stand threshold depends on the age band (R9.5); `kneeFlexion` and rounding are applied (R5.5).
   - Requirements: R9.2 to R9.5.
 
-- [ ] 9. Speech service and prompt gate
+- [x] 9. Speech service and prompt gate
   - `src/services/speech.ts` (injectable `speak`, `cancel`, `available`) and `src/logic/prompts.ts` (`createPromptGate`). Voice preference hook in `src/data/prefs.ts`.
   - Tests with a fake `speechSynthesis`: cancel before speak, cancel on stop, unavailable case hides the control and still returns the text, same text is not repeated within 4 s.
   - Requirements: R4.3, R4.5, R14.
 
-- [ ] 10. Session machine and controller
+- [x] 10. Session machine and controller
   - `src/session/machine.ts` (pure reducer for screens and run states), `src/services/source.ts` (`createSource(mode, test)`; the camera source is created only on request), `src/logic/readiness.ts`, and `src/session/useSession.ts` that wires the pipeline, the logic modules, the 5-second countdown and the end-of-run rules for ROM, chair stand and stance.
   - Tests: reducer cannot reach `running` except from `countdown` and cannot start before the safety confirmation (R3.3); readiness needs one continuous second (R3.4); a headless controller test runs every demo clip to its result with a fake clock and checks the result equals the designed outcome; ROM run ends after 3 reps, on Done, or at 60 s (R5.1); camera errors surface typed messages and offer the demo (R3.5); `stop` releases the source (R4.7).
   - Requirements: R3.4 to R3.6, R4, R5.1, R7.1, R8.2.

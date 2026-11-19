@@ -1,124 +1,50 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  createFixturePlayer,
-  createMediaPipeSource,
-  createPipeline,
-  drawSkeleton,
-  parseFixture,
-  parseMovementSpec,
-  type PoseSource,
-  type SkeletonStyle,
-} from 'marrow-core';
-import clipJson from 'marrow-core/fixtures/elbow-cycle-3reps.json';
-import specJson from 'marrow-core/specs/elbow-cycle.json';
 import styles from './App.module.css';
 
-type Mode = 'demo' | 'camera';
-
-const WIDTH = 640;
-const HEIGHT = 480;
-
-const parsedSpec = parseMovementSpec(specJson);
-if (!parsedSpec.ok) throw new Error(parsedSpec.issues.map((i) => `${i.path}: ${i.message}`).join('\n'));
-const spec = parsedSpec.spec;
-const clip = parseFixture(clipJson);
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-function cssVar(name: string, fallback: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+/** Small skeleton mark: skull, spine and ribs. Decorative. */
+function SkeletonMark() {
+  return (
+    <svg
+      className={styles.mark}
+      width="32"
+      height="32"
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="16" cy="6" r="4" />
+      <path d="M16 10v18" />
+      <path d="M10 15q6 3 12 0M10 20q6 3 12 0M11 25q5 2 10 0" />
+    </svg>
+  );
 }
 
 export function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mode, setMode] = useState<Mode>('demo');
-  const [playing, setPlaying] = useState(() => !prefersReducedMotion());
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d') ?? null;
-    ctx?.clearRect(0, 0, WIDTH, HEIGHT);
-    if (!playing) return;
-
-    const source: PoseSource =
-      mode === 'camera' ? createMediaPipeSource() : createFixturePlayer(clip, { loop: true });
-    const pipeline = createPipeline({ source, spec });
-    const style: SkeletonStyle = {
-      boneColor: cssVar('--bone', '#ffffff'),
-      jointColor: cssVar('--joint', '#ffffff'),
-      lineWidth: 4,
-      jointRadius: 5,
-    };
-    source.onError((e) => {
-      setError(e.message);
-      setPlaying(false);
-    });
-    source.onPoseLost(() => ctx?.clearRect(0, 0, WIDTH, HEIGHT));
-    pipeline.onFrame(({ frame }) => {
-      if (!ctx) return;
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-      drawSkeleton(ctx, frame, style);
-    });
-    setError(null);
-    void pipeline.start();
-    return () => pipeline.stop();
-  }, [mode, playing]);
-
-  function choose(next: Mode): void {
-    if (next === mode) return;
-    setError(null);
-    setMode(next);
-    setPlaying(next === 'camera' || !prefersReducedMotion());
-  }
-
   return (
-    <main className={styles.app}>
-      <h1 className={styles.title}>Steady</h1>
-      <p className={styles.tagline}>Hello skeleton: calm, clear movement checks.</p>
-
-      <div className={styles.stage}>
-        <canvas
-          ref={canvasRef}
-          width={WIDTH}
-          height={HEIGHT}
-          className={`${styles.canvas} ${mode === 'camera' ? styles.mirror : ''}`}
-          role="img"
-          aria-label="Skeleton overlay drawn from pose landmarks"
-        />
-      </div>
-
-      <div className={styles.controls}>
-        <fieldset className={styles.group}>
-          <legend className={styles.hidden}>Pose source</legend>
-          <button type="button" className={styles.button} aria-pressed={mode === 'demo'} onClick={() => choose('demo')}>
-            Demo clip
-          </button>
-          <button
-            type="button"
-            className={styles.button}
-            aria-pressed={mode === 'camera'}
-            onClick={() => choose('camera')}
-          >
-            Camera
-          </button>
-        </fieldset>
-        <button type="button" className={`${styles.button} ${styles.primary}`} onClick={() => setPlaying(!playing)}>
-          {playing ? 'Pause' : 'Play'}
-        </button>
-      </div>
-
-      {error && (
-        <p role="alert" className={styles.error}>
-          {error}
+    <div className={styles.shell}>
+      <a className={styles.skip} href="#content">
+        Skip to main content
+      </a>
+      <header className={styles.header}>
+        <SkeletonMark />
+        <p className={styles.brand}>Steady</p>
+      </header>
+      <main id="content" className={styles.main}>
+        <h1>Choose a test</h1>
+      </main>
+      <footer className={styles.footer}>
+        <p>
+          Steady is not a medical device and does not give medical advice or a diagnosis. Talk to your physical
+          therapist or doctor about your results.
         </p>
-      )}
-
-      <p className={styles.privacy}>
-        Everything runs on your device. No video is uploaded and no landmarks leave your browser.
-      </p>
-    </main>
+        <p>
+          Everything runs on your device. No video is uploaded and no landmarks leave your browser. Results are
+          saved only in this browser.
+        </p>
+      </footer>
+    </div>
   );
 }
