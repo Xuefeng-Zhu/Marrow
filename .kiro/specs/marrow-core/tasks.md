@@ -31,7 +31,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: unit cases against hand-built frames, plus P5 through the metric layer.
   - Keeps typecheck, test and build green. Requirements: R3.7 to R3.9.
 
-- [ ] 6. Engine: phases, hysteresis and reps
+- [x] 6. Engine: phases, hysteresis and reps
   - `src/engine/engine.ts` with `createEngine`, `push`, `reset`, typed events `phase` and `rep`, `minRepMs`, per-metric-kind hysteresis, and the retention-wins rule.
   - Add `src/testing/sequences.ts` (frame and value sequence generators shared by tests, exported only for tests, not from the public entry).
   - Tests: unit cases plus P11 to P14, P16, P17, with P13 and P14 noise bounded as in R10 and P14 using transition witnesses, not midpoints.

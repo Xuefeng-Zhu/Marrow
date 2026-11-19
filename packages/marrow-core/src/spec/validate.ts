@@ -7,14 +7,14 @@ type Ctx = z.RefinementCtx;
 const has = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
 
 /** An interval with open or closed ends, used for the exact reachability check. */
-type Interval = { lo: number; hi: number; loOpen: boolean; hiOpen: boolean };
+export type Interval = { lo: number; hi: number; loOpen: boolean; hiOpen: boolean };
 
 function isNonEmpty(i: Interval): boolean {
   return i.lo < i.hi || (i.lo === i.hi && !i.loOpen && !i.hiOpen);
 }
 
 /** Subtract the closed interval [a, b] from each interval in the list. */
-function subtractClosed(list: Interval[], a: number, b: number): Interval[] {
+export function subtractClosed(list: Interval[], a: number, b: number): Interval[] {
   const out: Interval[] = [];
   for (const i of list) {
     // Part below a.
