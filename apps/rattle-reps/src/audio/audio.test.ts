@@ -103,3 +103,16 @@ describe('voice', () => {
     }
   });
 });
+
+describe('sound on a suspended context', () => {
+  it('resumes a suspended context when it rattles', () => {
+    const { Ctx, created } = fakeAudio();
+    const sound = createSound({ AudioContext: Ctx, lazy: () => true });
+    sound.rattle();
+    const c = created[0] as { state: string; resume: ReturnType<typeof vi.fn> };
+    c.state = 'suspended';
+    c.resume.mockClear();
+    sound.rattle();
+    expect(c.resume).toHaveBeenCalled();
+  });
+});

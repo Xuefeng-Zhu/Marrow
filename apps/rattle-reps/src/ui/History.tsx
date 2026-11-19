@@ -4,6 +4,7 @@ import type { Store } from '../storage/store';
 import { dayNumber, weekStart } from '../streak/dayKey';
 import { computeStreak } from '../streak/streak';
 import { cleanText, movementName, resultText, seconds } from './format';
+import { useSettings } from './Settings';
 import { Layout } from './Layout';
 import styles from './History.module.css';
 
@@ -39,6 +40,7 @@ export function History({ store, today, onStart, onBack }: HistoryProps) {
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [persistent, setPersistent] = useState(true);
+  const { reset } = useSettings();
 
   useEffect(() => {
     let alive = true;
@@ -65,6 +67,7 @@ export function History({ store, today, onStart, onBack }: HistoryProps) {
     } catch {
       // The in-memory copy below is still emptied.
     }
+    reset();
     setEntries([]);
     setConfirming(false);
   };

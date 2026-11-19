@@ -13,7 +13,7 @@ import { createRattleStore, type Store } from './storage/store';
 import { Layout } from './ui/Layout';
 import { Mode } from './ui/Mode';
 import { Picker } from './ui/Picker';
-import { SettingsProvider } from './ui/Settings';
+import { SettingsProvider, useSettings } from './ui/Settings';
 
 /** The live session pulls in the pipeline, so it is its own chunk (R21.4). */
 const Session = lazy(() => import('./ui/Session'));
@@ -46,6 +46,7 @@ function Screens({
   createSource?: AppProps['createSource'];
 }) {
   const [screen, dispatch] = useReducer(screenReducer, INITIAL_SCREEN);
+  const { settings, sound } = useSettings();
   /** After a camera failure the same run continues with the demo clip. */
   const [demoFallback, setDemoFallback] = useState(false);
 
@@ -54,10 +55,14 @@ function Screens({
   /** Mode of the set that just ended, which can differ from the run after a camera failure. */
   const lastMode = useRef<'camera' | 'demo'>('demo');
 
-  const onEnd = useCallback(
+  // The demo fallback ends when the session screen is left, not when the set ends. Clearing it
+  // earlier would remount the session on the failed camera path while the result is being saved.
+  useEffect(() => {
+    if (screen.name !== 'session') setDemoFallback(false);
+  }, [screen.name]);
+
+  const save = useCallback(
     async (result: SessionResult, run: Run, mode: 'camera' | 'demo') => {
-      setDemoFallback(false);
-      lastMode.current = mode;
       const { summary, startT, stopT } = result;
       const startedAt = Date.now() - Math.max(0, stopT - startT);
       const id = `${startedAt}-${nextId.current++}`;
@@ -72,10 +77,31 @@ function Screens({
         },
         id,
       );
-      streakWeeks.current = recorded.streakWeeks;
-      dispatch({ type: 'setEnded', summary, saved: recorded.saved, streakGain: recorded.streakGain });
+      return recorded;
     },
     [store],
+  );
+
+  const onEnd = useCallback(
+    async (result: SessionResult, run: Run, mode: 'camera' | 'demo') => {
+      lastMode.current = mode;
+      const recorded = await save(result, run, mode);
+      streakWeeks.current = recorded.streakWeeks;
+      // `run` ties the result to its own step: a result that arrives after the step was left is dropped.
+      dispatch({ type: 'setEnded', run, summary: result.summary, saved: recorded.saved, streakGain: recorded.streakGain });
+    },
+    [save],
+  );
+
+  /** Skip step keeps the reps done so far. */
+  const onSkip = useCallback(
+    async (run: Run, mode: 'camera' | 'demo', partial?: SessionResult) => {
+      const keep = partial && (partial.summary.reps > 0 || partial.summary.holdMs > 0) ? partial : undefined;
+      if (keep) await save(keep, run, mode);
+      setDemoFallback(false);
+      dispatch({ type: 'skipStep', run, summary: keep?.summary });
+    },
+    [save],
   );
 
   const [streakBadge, setStreakBadge] = useState<string | undefined>(undefined);
@@ -115,7 +141,11 @@ function Screens({
       return (
         <Mode
           choice={screen.choice}
-          onChoose={(mode) => dispatch({ type: 'chooseMode', mode })}
+          onChoose={(mode) => {
+            // Restored sound has no AudioContext yet. This click is the gesture that may create it.
+            if (settings.sound) sound.unlock();
+            dispatch({ type: 'chooseMode', mode });
+          }}
           onBack={() => dispatch({ type: 'back' })}
         />
       );
@@ -132,16 +162,8 @@ function Screens({
             mode={mode}
             target={run.target}
             onEnd={(result) => void onEnd(result, run, mode)}
-            onSkipStep={
-              run.choice.kind === 'circuit'
-                ? () => {
-                    setDemoFallback(false);
-                    dispatch({ type: 'skipStep' });
-                  }
-                : undefined
-            }
+            onSkipStep={run.choice.kind === 'circuit' ? (partial) => void onSkip(run, mode, partial) : undefined}
             onHome={() => {
-              setDemoFallback(false);
               dispatch({ type: 'home' });
             }}
             createSource={createSource}

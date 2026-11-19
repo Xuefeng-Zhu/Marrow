@@ -12,6 +12,8 @@ export interface SettingsApi {
   /** Turning sound on creates the `AudioContext`, so call it from the click handler itself. */
   setSound(on: boolean): void;
   setShowVideo(on: boolean): void;
+  /** Back to the defaults without writing them (the stored settings were just deleted). */
+  reset(): void;
 }
 
 const INERT_VOICE: Voice = { supported: false, speak: () => undefined, cancel: () => undefined };
@@ -24,6 +26,7 @@ const SettingsContext = createContext<SettingsApi>({
   setVoice: () => undefined,
   setSound: () => undefined,
   setShowVideo: () => undefined,
+  reset: () => undefined,
 });
 
 export function useSettings(): SettingsApi {
@@ -88,6 +91,13 @@ export function SettingsProvider({ store, engines, children }: SettingsProviderP
         update({ sound: on });
       },
       setShowVideo: (on) => update({ showVideo: on }),
+      reset: () => {
+        touched.current = true;
+        voice.cancel();
+        sound.close();
+        current.current = DEFAULT_SETTINGS;
+        setSettings(DEFAULT_SETTINGS);
+      },
     }),
     [settings, voice, sound, update],
   );

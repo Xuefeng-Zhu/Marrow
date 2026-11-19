@@ -10,18 +10,21 @@ export interface CueBarProps {
   now?: () => number;
 }
 
+const defaultNow = () => performance.now();
+
 export const POSE_LOST_TEXT = 'Step back so I can see you';
 
 /**
  * Two live regions: warnings are assertive and carry an icon and a text label, so they never rely on
  * color alone (R6.3). Phase and other cues are polite (R6.5). Only one warning shows at a time.
  */
-export function CueBar({ cue, poseLost, status, now = () => performance.now() }: CueBarProps) {
+export function CueBar({ cue, poseLost, status, now = defaultNow }: CueBarProps) {
   const [, setTick] = useState(0);
   const expiresAt = cue?.expiresAt ?? null;
   useEffect(() => {
     if (expiresAt === null) return;
-    const wait = Math.max(0, expiresAt - now());
+    const wait = expiresAt - now();
+    if (wait <= 0) return; // already expired: nothing to schedule
     const id = setTimeout(() => setTick((n) => n + 1), wait + 1);
     return () => clearTimeout(id);
   }, [expiresAt, now]);

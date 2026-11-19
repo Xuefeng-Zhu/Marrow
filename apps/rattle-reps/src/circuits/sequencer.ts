@@ -29,7 +29,8 @@ export type SeqState =
 
 export type SeqAction =
   | { type: 'setEnded'; summary: SetSummary }
-  | { type: 'skipStep' }
+  /** A skipped step keeps the partial set, if there is one. */
+  | { type: 'skipStep'; summary?: SetSummary }
   | { type: 'restEnded' }
   | { type: 'skipRest' };
 
@@ -45,7 +46,7 @@ export function step(circuit: Circuit, state: SeqState, action: SeqAction): SeqS
     const movementId = circuit.steps[state.index]?.movementId ?? '';
     const results = [
       ...state.results,
-      { index: state.index, movementId, summary: action.type === 'setEnded' ? action.summary : null },
+      { index: state.index, movementId, summary: action.summary ?? null },
     ];
     return state.index >= circuit.steps.length - 1
       ? { phase: 'done', results }

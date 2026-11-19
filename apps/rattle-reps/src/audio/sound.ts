@@ -68,6 +68,8 @@ export function createSound(env: SoundEnv = {}): Sound {
     rattle() {
       const c = ctx ?? (env.lazy?.() ? ensure() : null);
       if (!c) return;
+      // A context made outside a user gesture can be suspended.
+      if (c.state === 'suspended') void c.resume?.();
       const start = c.currentTime;
       for (let i = 0; i < BURSTS; i++) {
         const at = start + (i / BURSTS) * SPAN_S;

@@ -24,8 +24,8 @@ export interface SessionProps {
   onHome(): void;
   /** After a camera failure: run the same workout with the demo clip. */
   onUseDemo?(): void;
-  /** Circuit only: skip this step without a result. */
-  onSkipStep?(): void;
+  /** Circuit only: skip this step. Gets the partial set when it has one, and nothing when it has none. */
+  onSkipStep?(partial?: SessionResult): void;
   /** Replaces the real source factory (tests). */
   createSource?: (o: CreateSourceOptions) => Promise<SessionSource>;
 }
@@ -42,9 +42,47 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
   const video = useRef<HTMLVideoElement>(null);
   const { settings, voice, sound, setShowVideo } = useSettings();
   const showVideo = settings.showVideo;
-  const session = useSession({ workout, mode, target, video, onEnd, createSource });
+  /** Set while Skip step stops the set, so that the partial result goes to `onSkipStep`. */
+  const skipping = useRef(false);
+  const handleEnd = useCallback(
+    (result: SessionResult) => {
+      if (skipping.current) {
+        skipping.current = false;
+        onSkipStep?.(result);
+      } else onEnd(result);
+    },
+    [onEnd, onSkipStep],
+  );
+  const session = useSession({ workout, mode, target, video, onEnd: handleEnd, createSource });
   const { view, pause, resume, stop } = session;
   const paused = view.status === 'paused';
+
+  const skipStep = () => {
+    skipping.current = true;
+    stop();
+    if (skipping.current) {
+      // Nothing ended (for example after an error): skip without a result.
+      skipping.current = false;
+      onSkipStep?.();
+    }
+  };
+
+  // The camera frame can be any shape, so the stage and the skeleton take its aspect ratio.
+  const [aspect, setAspect] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const el = video.current;
+    if (mode !== 'camera' || !el) return;
+    const read = () => {
+      if (el.videoWidth > 0 && el.videoHeight > 0) setAspect(el.videoWidth / el.videoHeight);
+    };
+    read();
+    el.addEventListener('loadedmetadata', read);
+    el.addEventListener('resize', read);
+    return () => {
+      el.removeEventListener('loadedmetadata', read);
+      el.removeEventListener('resize', read);
+    };
+  }, [mode]);
 
   // Sound and voice react to the live view. The latest settings are read through a ref, so turning a
   // toggle does not replay old events.
@@ -123,7 +161,7 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
       )}
 
       <div className={styles.layout}>
-        <div className={styles.stage} data-testid="stage">
+        <div className={styles.stage} data-testid="stage" style={aspect ? { aspectRatio: String(aspect) } : undefined}>
           {mode === 'camera' && (
             <video
               ref={video}
@@ -133,7 +171,7 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
               className={`${styles.video} ${showVideo ? styles.videoShown : styles.videoHidden}`}
             />
           )}
-          <SkeletonCanvas subscribe={session.onFrame} reps={view.reps} cue={view.cue} mirror={mode === 'camera'} />
+          <SkeletonCanvas subscribe={session.onFrame} reps={view.reps} cue={view.cue} mirror={mode === 'camera'} aspect={aspect} />
           <Effects request={effect} />
         </div>
 
@@ -152,7 +190,7 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
               Stop
             </button>
             {onSkipStep && (
-              <button type="button" className="btn" onClick={onSkipStep}>
+              <button type="button" className="btn" onClick={skipStep} disabled={view.status === 'ended'}>
                 Skip step
               </button>
             )}

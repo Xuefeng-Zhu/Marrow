@@ -11,6 +11,8 @@ export const RATTLE_MS = 600;
 export const RATTLE_AMPLITUDE = 7;
 export const TINT_MS = 1000;
 
+const defaultNow = () => performance.now();
+
 /** Deterministic pseudo-random number in [0, 1) from an integer seed. */
 function unit(seed: number): number {
   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
@@ -39,10 +41,12 @@ export interface SkeletonCanvasProps {
   /** Mirror the picture, as the camera preview is mirrored. */
   mirror?: boolean;
   now?: () => number;
+  /** Width over height of the picture behind the canvas (the camera frame). */
+  aspect?: number;
 }
 
 /** The skeleton overlay. Decorative: the count and cues are available as text next to it (R19.6). */
-export function SkeletonCanvas({ subscribe, reps, cue, mirror, now = () => performance.now() }: SkeletonCanvasProps) {
+export function SkeletonCanvas({ subscribe, reps, cue, mirror, now = defaultNow, aspect = WIDTH / HEIGHT }: SkeletonCanvasProps) {
   const reduced = useReducedMotion();
   const canvas = useRef<HTMLCanvasElement>(null);
   const frame = useRef<Frame | null>(null);
@@ -79,7 +83,7 @@ export function SkeletonCanvas({ subscribe, reps, cue, mirror, now = () => perfo
     let raf = 0;
     const loop = () => {
       const t = now();
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      ctx.clearRect(0, 0, el.width, el.height);
       const f = frame.current;
       if (f) {
         const c = cueRef.current;
@@ -101,11 +105,13 @@ export function SkeletonCanvas({ subscribe, reps, cue, mirror, now = () => perfo
     return () => cancelAnimationFrame(raf);
   }, [now]);
 
+  const canvasHeight = Math.max(1, Math.round(WIDTH / (aspect > 0 && Number.isFinite(aspect) ? aspect : WIDTH / HEIGHT)));
+
   return (
     <canvas
       ref={canvas}
       width={WIDTH}
-      height={HEIGHT}
+      height={canvasHeight}
       aria-hidden="true"
       className={`${styles.canvas} ${mirror ? styles.mirror : ''} ${flash ? styles.flash : ''}`}
     />
