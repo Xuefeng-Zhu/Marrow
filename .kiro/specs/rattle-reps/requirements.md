@@ -101,7 +101,7 @@ Acceptance criteria:
 1. WHILE a rep workout is running, the UI SHALL show the current rep count as a large number, and the target if one is set.
 2. WHEN a `rep` event arrives, THEN the displayed count SHALL equal the event's `count`.
 3. WHEN the count changes, THEN the UI SHALL give a celebratory effect (R17) and SHALL rattle the skeleton bones (R8).
-4. WHEN the count reaches the target of a rep workout, THEN the set SHALL end and the summary SHALL be shown (R9).
+4. WHEN the count reaches the target of a rep workout, THEN the set SHALL end and the summary SHALL be shown (R9). The app SHALL finish processing the `rom:sample` of the terminal frame, including any `shallow-depth` warning required by R1.14, before it stops the pipeline and computes the summary.
 5. WHILE a hold workout is running and a hold is active, the UI SHALL show the elapsed hold time in seconds as a large number, updated on each `hold:tick`.
 6. The rep counter SHALL NOT decrease during a set.
 7. The count region SHALL be an `aria-live="polite"` region so that screen readers announce changes without interrupting.
@@ -159,7 +159,7 @@ Acceptance criteria:
 3. A rep SHALL be a clean rep if and only if its rep window contains no `form:warning` event. Warnings after the last `rep` event SHALL belong to no rep window.
 4. The clean-rep percentage SHALL be `round(100 * cleanReps / reps)` for `reps > 0`, and 0 for `reps = 0`. The UI SHALL show "n/a" instead of 0% when there are no reps.
 5. Time under tension for a rep workout SHALL be the sum of the `durationMs` of its `rep` events. For a hold workout it SHALL be the sum of the `durationMs` of its `hold:end` events, and a hold still active when the set ends SHALL be closed at the stop time and counted.
-6. For a hold workout, the clean percentage SHALL be the share of hold time that is not within 2000 ms after a `form:warning` event that occurred during that hold, rounded to an integer percent, and 100 if no warning occurred during a hold.
+6. For a hold workout, the clean percentage SHALL be the share of hold time that is not within 2000 ms after a `form:warning` event that occurred during that hold, rounded to an integer percent, and 100 if no warning occurred during a hold. The interval of a completed hold SHALL be from its `hold:start` time to that time plus the `durationMs` of its `hold:end`, not to the `t` of the `hold:end` event, so that a hold ended by `lost-pose` is not extended to the time the loss was detected.
 7. The summary SHALL be computed by pure functions of the event list, the set start and stop times, and the workout definition, with no access to the DOM, clock or storage.
 8. WHEN the user stops a set early with at least one rep or hold, THEN the app SHALL still show a summary for what was done.
 9. WHEN a set ends with zero reps and zero hold time, THEN the app SHALL show a friendly "No reps yet" state, SHALL NOT save the set to history, and SHALL offer to retry or return to the picker.
@@ -300,7 +300,7 @@ Acceptance criteria:
 2. Text SHALL have a contrast ratio of at least 4.5:1 against its background, and large text at least 3:1 (WCAG AA), and a test of the theme tokens SHALL check this.
 3. Interactive targets SHALL be at least 44 by 44 CSS pixels.
 4. The session screen SHALL provide keyboard shortcuts for "Stop" (Escape) and "Pause" (Space) that are shown on the screen, and SHALL NOT trigger a shortcut while a text field has focus.
-5. Pausing SHALL stop frame processing and SHALL stop the time-under-tension and hold clocks. Resuming SHALL continue from the paused state. In Demo clip mode, WHILE paused, the demo clip SHALL NOT advance, and no frame of the clip SHALL be skipped or consumed, so that resuming continues from the first undelivered frame.
+5. Pausing SHALL stop frame processing and SHALL stop the time-under-tension and hold clocks. Resuming SHALL continue from the paused state. In Demo clip mode, WHILE paused, the demo clip SHALL NOT advance, and no frame of the clip SHALL be skipped or consumed, so that resuming continues from the first undelivered frame. In Camera mode, WHEN the user pauses while a hold is active, THEN the app SHALL end that hold with `lost-pose` on the first frame after resume, and the paused time SHALL NOT be counted in any hold duration or time under tension.
 6. Live regions SHALL follow R5.7 and R6.5, and the canvas SHALL have `aria-hidden="true"` and an adjacent text alternative (current rep count and last cue).
 7. Toggles (voice, sound, show my video) SHALL be real buttons or checkboxes with an accessible name and a pressed or checked state.
 8. No information SHALL be conveyed by color alone (R6.3).
@@ -347,6 +347,7 @@ Properties are tested with fast-check (Vitest). The pure modules they cover are 
 - **P7 (TUT additive):** `tut` equals the sum of `durationMs` of rep events (rep workouts) or of hold durations (hold workouts), is at least 0, and does not depend on the order of the `form:warning` events.
 - **P8 (summary is pure):** computing the summary twice from the same inputs gives deeply equal results, and the input arrays are not mutated.
 - **P9 (hold clean share):** for a hold workout, `cleanPct` is in `[0, 100]`, equals 100 with no warnings, and is not increased by adding a warning.
+- **P9b (hold interval):** a completed hold contributes the interval `[start, start + durationMs]` regardless of the `t` of its `hold:end`. Example: start 0, `lost-pose` end at `t = 2000` with `durationMs = 1200`, one warning at 1000, gives `cleanPct = 83`. A warning after `start + durationMs` adds no dirty time.
 - **P10 (open hold closed at stop):** a `hold:start` without a `hold:end` before the stop time contributes `stop - start` to TUT, and never a negative value.
 - **P11 (grouping):** the per-rule warning counts in the summary add up to the number of `form:warning` events in the input.
 
