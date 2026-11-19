@@ -9,7 +9,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: every JSON in the folder parses, ids equal file names, each spec has the required rules and messages of at most 40 characters, squat and push-up declare the `rep` rom entry, the plank has a hold, the registry is the only importer of the JSON.
   - Keeps typecheck, test and build green. Requirements: R1.1 to R1.13.
 
-- [ ] 2. Hygiene tests for core imports
+- [x] 2. Hygiene tests for core imports
   - Add a test that scans `src/` and `scripts/` and fails on any import of a `marrow-core/` sub-path.
   - The stub `App.tsx` still has two deep imports at this point, so in the same task make the stub import nothing from `marrow-core/fixtures` or `marrow-core/specs`: render from the registry spec and a tiny inline stub frame source, keeping the stub's existing test passing (or update that test).
   - Keeps typecheck, test and build green. Requirements: R4.5, R4.6, R20.2.
