@@ -14,7 +14,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: unit cases plus fast-check P1 to P5.
   - Keeps typecheck, test and build green. Requirements: R3.
 
-- [ ] 3. One-Euro smoothing
+- [x] 3. One-Euro smoothing
   - `src/smoothing/oneEuro.ts` and `src/smoothing/landmarkSmoother.ts`.
   - Tests: unit cases plus fast-check P6 to P10.
   - Keeps typecheck, test and build green. Requirements: R4.
