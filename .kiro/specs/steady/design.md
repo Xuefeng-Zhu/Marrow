@@ -138,14 +138,18 @@ describeAsymmetry(left: number, right: number): { pct: number; larger: Side | 'e
 
 // chairStand.ts
 interface ChairStandCounter {
-  push(e: MarrowEvent): void       // counts `rep` with t <= windowMs; ignores the rest
-  setPhase(phase: string | null): void
-  result(): number                 // reps in window + (phase === 'standing' ? 1 : 0)
+  push(e: MarrowEvent): void       // counts `rep` with startT <= t <= startT + windowMs, tracks `phase` events; an event after the window closes it
+  setPhase(phase: string | null, t: number): void   // same as a `phase` event
+  finish(): void                   // closes the window (idempotent)
+  result(): number                 // reps in window, plus 1 once closed if the phase at the window end was 'standing'
+  readonly closed: boolean
 }
 createChairStandCounter(startT: number, windowMs?: number): ChairStandCounter  // windowMs default 30000
 ```
 
-`t` in events is the pipeline timeline (fixture `t` or camera clock). `startT` is the `t` of the first frame after the countdown, so the window is `[startT, startT + windowMs]`. The `standing` bonus applies only if the last known phase was set at or before the window end.
+`t` in events is the pipeline timeline (fixture `t` or camera clock). `startT` is the `t` of the first frame after the countdown, so the window is `[startT, startT + windowMs]`.
+
+Standing bonus rule (reconciles R7.2 with the monotone count R7.4): the engine already drops cycles shorter than `minRepMs`, so a fast stand and sit emits no `rep`. The bonus is therefore not a live value. `result()` returns only the in-window reps while the window is open, and the +1 is added once, when the window closes (`finish()` or the first event after the window), using the phase that was current at the window end. The count can only go up: reps only increase, the bonus is at most +1 and is fixed at close, and nothing changes afterwards. It cannot double count, because the `rep` of a stand still in progress at the window end has a `t` after the window and is ignored. A stand that was discarded as too fast leaves the phase at `seated`, so it earns no bonus and never makes a displayed count drop.
 
 ```ts
 // stance.ts
@@ -159,7 +163,7 @@ interface StanceTimer {
 createStanceTimer(capMs?: number): StanceTimer // default 30000
 ```
 
-Rules: `hold:start` sets `startT = e.t` once. The first stop event with `t >= startT` wins: `hold:end` gives `released` or `lost-pose`, `form:warning` with `ruleId === 'sway-limit'` gives `sway`, a `hold:tick` or any event with `t - startT >= capMs` gives `cap`. After stopping, `push` is a no-op. Seconds is `min(capMs, t_stop - startT) / 1000`, floored to one decimal and never below 0. A sway warning before `hold:start` is ignored (the user was not on one leg yet). The reason `user` comes from `stopByUser`.
+Rules: `hold:start` sets `startT = e.t` once. The engine emits `hold:start` after the hold's `minMs` (500 ms), with the `t` the lift began, so a `form:warning` with `ruleId === 'sway-limit'` can arrive before `hold:start`. While waiting, the timer buffers those warnings. When `hold:start` arrives, the earliest buffered warning with `t >= startT` stops the timer at once with reason `sway`; warnings with `t < startT` (before the lift) are dropped. After the start, the first stop event with `t >= startT` wins: `hold:end` gives `released` or `lost-pose`, `form:warning` with `ruleId === 'sway-limit'` gives `sway`, and any event or stop with `t - startT >= capMs` gives `cap`. After stopping, `push` is a no-op. Seconds is `min(capMs, t_stop - startT) / 1000`, floored to one decimal and never below 0. The reason `user` comes from `stopByUser`. If `stopByUser` is called before `hold:start`, the timer stops with no result.
 
 ```ts
 // trend.ts
@@ -300,7 +304,7 @@ The report screen is a normal React screen. `print.css` (imported once) applies 
 
 - **Pure logic outside React.** More files than inline hooks, but every correctness property is testable with fast-check without rendering.
 - **Peak from both `rom:sample` and frame metrics.** `rom:sample` only fires on a trigger, so a raise still held when the user stops would be lost. Taking the max over both fixes this without changing the core.
-- **Chair stand "+1 if standing".** Follows the usual scoring rule that a stand more than halfway counts. It is a documented app rule, kept in one function and covered by P9.
+- **Chair stand "+1 if standing".** Follows the usual scoring rule that a stand more than halfway counts. It is a documented app rule, applied once when the window closes (see the chair stand rule above) and covered by P9 and P10.
 - **Stance side names the standing leg.** It matches how a therapist records "left leg stance" and keeps the metric names simple.
 - **Sway ends the test.** The user asked for end on foot-down or sway beyond a threshold. The threshold is data in the spec, not code.
 - **Per-day best, not average.** For ROM, count and time, the best of the day reflects capacity and is less affected by a tired second attempt. The report also lists the number of results per day range.

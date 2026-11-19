@@ -28,7 +28,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: unit cases (empty input, NaN only, equal sides, zero sides) plus fast-check P1 to P8.
   - Requirements: R5.2 to R5.5, R6. Properties: P1 to P8.
 
-- [ ] 5. Chair stand counter and stance timer with properties
+- [x] 5. Chair stand counter and stance timer with properties
   - `src/logic/chairStand.ts` (`createChairStandCounter`) and `src/logic/stance.ts` (`createStanceTimer`) as in the design.
   - Tests: unit cases including the +1 standing rule, late events, sway before hold start, `lost-pose`, the 30-second cap and `stopByUser`; fast-check P9 to P16 with generators for event sequences with non-decreasing `t`.
   - Add tests that feed the events produced by replaying the task 3 clips through the counter and the timer and match the designed outcome (R7, R8, R13.4).
