@@ -69,7 +69,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: demo flow for every test from Home to a saved result using the committed clips and fake timers (R13.3); prompts are `role="status"`; Stop is reachable by keyboard; speech cancelled on leaving; reduced-motion removes countdown animation; "Foot was not lifted" and "No movement detected" are not saved; a storage failure shows the message and keeps the card printable.
   - Requirements: R4, R5, R7, R8, R9.1, R9.6, R9.7, R13.3, R13.6.
 
-- [ ] 13. History and trend chart
+- [x] 13. History and trend chart
   - `src/ui/History.tsx` (per test and side lists, delete one with confirmation, delete all with confirmation, empty state, "Include demo clips" toggle) and `src/ui/TrendChart.tsx` (inline SVG with title, desc, table alternative, shape markers).
   - Tests: shows newest first; chart points equal `aggregateByDay` output; table matches the points; deleting asks for confirmation; empty state text; demo toggle filters records and labels demo rows.
   - Requirements: R10.3, R10.6, R10.7, R10.9, R15.8.

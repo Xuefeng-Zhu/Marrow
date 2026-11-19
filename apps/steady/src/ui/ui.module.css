@@ -167,3 +167,38 @@
   border-radius: var(--radius);
   font-weight: 600;
 }
+
+.chart {
+  margin: 1rem 0;
+}
+
+.chartSvg {
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  color: var(--accent);
+}
+
+.chartTable {
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.chartTable th,
+.chartTable td {
+  border: 1px solid var(--muted);
+  padding: 0.25rem 0.75rem;
+  text-align: left;
+}
+
+.summaryList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.summaryList dd {
+  margin: 0;
+  font-weight: 600;
+}
