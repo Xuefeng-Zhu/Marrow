@@ -2,7 +2,7 @@
 
 Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at the repo root (Node 22, as in CI). Each task is one small commit. Tests are written in the same task as the code they cover. Requirement numbers refer to `requirements.md`.
 
-- [ ] 1. Monorepo scaffold
+- [x] 1. Monorepo scaffold
   - Add root `package.json` (private, workspaces `packages/*`, `apps/*`, scripts `typecheck`, `test`, `build` using `--workspaces --if-present`), `tsconfig.base.json` (strict), and root dev dependencies (`typescript`, `vitest`, `fast-check`).
   - Add `packages/marrow-core/package.json` (name `marrow-core`, `exports` to `src/index.ts`, scripts), `tsconfig.json`, an empty `src/index.ts` exporting a `VERSION` constant, and one trivial Vitest test so `npm test` has something to run.
   - Make `build` produce `dist/` via `tsc` and add `dist` to `.gitignore` if missing.
