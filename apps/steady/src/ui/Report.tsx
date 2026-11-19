@@ -44,7 +44,7 @@ export function Report({ onBack }: { onBack: () => void }) {
   const heading = useHeadingFocus();
   const { records, unavailable } = useRecords();
   const [range, setRange] = useState<Range>('all');
-  const [includeDemo, setIncludeDemo] = useState(true);
+  const [includeDemo, setIncludeDemo] = useState(false);
   const [now] = useState(() => new Date());
 
   const inRange = useMemo(() => {

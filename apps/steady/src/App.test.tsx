@@ -11,6 +11,11 @@ afterEach(() => {
 });
 
 describe('Steady app shell', () => {
+  it('offers the footer About button on Home', () => {
+    render(<App />);
+    expect(screen.getByRole('button', { name: 'About Steady' })).toBeTruthy();
+  });
+
   it('has a main landmark with the content id and a heading', () => {
     render(<App />);
     const main = screen.getByRole('main');

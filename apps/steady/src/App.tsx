@@ -161,7 +161,7 @@ export function App({ speech: injected }: AppProps = {}) {
           Everything runs on your device. No video is uploaded and no landmarks leave your browser. Results are
           saved only in this browser.
         </p>
-        {!inRun && state.screen !== 'about' && (
+        {!inRun && state.screen !== 'about' && state.screen !== 'result' && (
           <button type="button" className="btn" onClick={() => session.goto('about')}>
             About Steady
           </button>

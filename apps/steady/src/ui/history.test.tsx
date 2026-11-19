@@ -140,6 +140,17 @@ describe('Report', () => {
     expect(screen.getByText(/left 100, right 80 degrees\. Left is 20% larger\./)).toBeTruthy();
   });
 
+  it('excludes demo results by default and includes them when ticked', async () => {
+    await saveRecord(rec({ source: 'demo', value: 77, takenAt: '2025-03-01T10:00:00' }));
+    await saveRecord(rec({ source: 'camera', value: 99, takenAt: '2025-03-02T10:00:00' }));
+    const user = userEvent.setup();
+    render(<Report onBack={noop} />);
+    const section = (await screen.findByRole('heading', { name: 'Knee flexion, left leg' })).closest('section')!;
+    expect(section.querySelector('dl')!.textContent).toContain('Number of results1');
+    await user.click(screen.getByRole('checkbox', { name: /demo/i }));
+    await waitFor(() => expect(section.querySelector('dl')!.textContent).toContain('Number of results2'));
+  });
+
   it('latestPair finds the latest shared day', () => {
     const l = [{ day: '2025-01-01', value: 1 }, { day: '2025-01-03', value: 3 }];
     const r = [{ day: '2025-01-01', value: 2 }, { day: '2025-01-02', value: 5 }];
