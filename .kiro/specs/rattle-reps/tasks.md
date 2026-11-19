@@ -75,7 +75,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: no `AudioContext` before unmute, rep triggers the rattle only while sound is on, warnings and every 5th rep are spoken only while voice is on, cancel on stop, unsupported browsers disable the toggle, toggles have accessible names and pressed state.
   - Keeps typecheck, test and build green. Requirements: R7.1 to R7.8, R19.7.
 
-- [ ] 14. Celebratory effects and reduced motion
+- [x] 14. Celebratory effects and reduced motion
   - Add `ui/Effects.tsx` (SVG and CSS bones and pumpkins, at most 2 s life, no focus or pointer capture, rate-limited by `shouldEmit`), the milestone, clean-set and streak triggers, and the text fallbacks.
   - Under reduced motion use static or fade-only effects, no rattle, and text badges.
   - Tests: an effect cleans itself up within 2 s (fake timers), no more than 3 effects start within any second, effects are `aria-hidden` and `pointer-events: none`, reduced motion removes movement classes and the text badge remains.

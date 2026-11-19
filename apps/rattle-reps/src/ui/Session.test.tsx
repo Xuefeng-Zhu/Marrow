@@ -111,6 +111,17 @@ describe('Session screen', () => {
     expect(screen.getByTestId('canvas-alt').textContent).toMatch(/Rep 6 of 10/);
   });
 
+  it('celebrates reps with at most 3 effects at once, away from the counter and controls', async () => {
+    const { source } = setup();
+    await started(source);
+    for (const frame of clip('squat')) act(() => source.emit(frame));
+    const count = screen.getAllByTestId('effect').length;
+    expect(count).toBeGreaterThanOrEqual(1);
+    expect(count).toBeLessThanOrEqual(3);
+    expect(screen.getByTestId('stage').contains(screen.getByTestId('effects'))).toBe(true);
+    expect(screen.getByTestId('counter-number').closest('[data-testid="stage"]')).toBeNull();
+  });
+
   it('shows a warning cue with an icon and a text label from the clip', async () => {
     const { source } = setup();
     await started(source);

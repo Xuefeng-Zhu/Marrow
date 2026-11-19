@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Target, WorkoutDef } from '../movements/registry';
 import { isMilestone } from '../session/cues';
 import type { Mode } from '../session/screenReducer';
 import type { SessionResult } from '../session/sessionController';
 import type { CreateSourceOptions, SessionSource } from '../session/sourceFactory';
 import { useSession } from '../session/useSession';
+import { Effects } from './Effects';
+import { repEffect, type EffectRequest } from './effectTriggers';
 import { Counter, counterSentence } from './Counter';
 import { CueBar } from './CueBar';
 import { Layout } from './Layout';
@@ -47,10 +49,12 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
   const live = useRef({ settings, target });
   live.current = { settings, target };
   const lastReps = useRef(0);
+  const [effect, setEffect] = useState<EffectRequest | null>(null);
   useEffect(() => {
     if (view.reps <= lastReps.current) return;
     lastReps.current = view.reps;
     const { settings: s, target: tg } = live.current;
+    setEffect((prev) => ({ key: (prev?.key ?? 0) + 1, ...repEffect(view.reps, tg.kind === 'reps' ? tg.reps : undefined) }));
     if (s.sound) sound.rattle();
     if (s.voice && isMilestone(view.reps, tg.kind === 'reps' ? tg.reps : undefined)) voice.speak(`${view.reps}`);
   }, [view.reps, sound, voice]);
@@ -128,6 +132,7 @@ export default function Session({ workout, mode, target, onEnd, onHome, onUseDem
             />
           )}
           <SkeletonCanvas subscribe={session.onFrame} reps={view.reps} cue={view.cue} mirror={mode === 'camera'} />
+          <Effects request={effect} />
         </div>
 
         <div className={styles.panel}>
