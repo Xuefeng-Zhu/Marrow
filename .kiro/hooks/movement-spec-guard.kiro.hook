@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "name": "Movement spec guard",
+  "description": "Validate movement JSON specs against the core schema and replay fixtures when a spec changes.",
+  "version": "1",
+  "when": { "type": "fileEdited", "patterns": ["apps/**/src/movements/*.json", "packages/marrow-core/specs/*.json"] },
+  "then": { "type": "askAgent", "prompt": "A movement spec changed. Validate it with the marrow-core zod schema, then replay any fixture recorded for that movement through the rules engine and confirm the expected rep/hold counts still match. Report the results and fix the spec if invalid." }
+}

@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "name": "Accessibility check",
+  "description": "Review UI changes for accessibility, especially Steady's older-adult audience.",
+  "version": "1",
+  "when": { "type": "fileEdited", "patterns": ["apps/**/src/**/*.tsx", "apps/**/src/**/*.css"] },
+  "then": { "type": "askAgent", "prompt": "Review the edited UI for accessibility: contrast (AA, AAA for Steady), focus order, keyboard use, aria labels on canvas controls, prefers-reduced-motion, and minimum 18px body / 48px touch targets in Steady. Fix issues you find." }
+}

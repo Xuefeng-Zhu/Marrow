@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+# NOTE: /.kiro is intentionally committed. Never ignore it.

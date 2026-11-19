@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "name": "Core stays lean",
+  "description": "Keep marrow-core framework-agnostic and free of app-specific logic.",
+  "version": "1",
+  "when": { "type": "fileEdited", "patterns": ["packages/marrow-core/src/**/*.ts"] },
+  "then": { "type": "askAgent", "prompt": "marrow-core was edited. Check that it imports no React/DOM-framework code, contains no exercise- or app-specific names (squat, Rattle Reps, Steady, etc.) outside examples/fixtures, and that every new public export is documented in docs/. Fix any violation." }
+}
