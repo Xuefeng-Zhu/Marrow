@@ -62,6 +62,7 @@ export function App() {
       ctx.clearRect(0, 0, WIDTH, HEIGHT);
       drawSkeleton(ctx, frame, style);
     });
+    setError(null);
     void pipeline.start();
     return () => pipeline.stop();
   }, [mode, playing]);

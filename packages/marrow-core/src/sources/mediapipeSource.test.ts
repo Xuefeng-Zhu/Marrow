@@ -179,6 +179,28 @@ describe('createMediaPipeSource', () => {
     expect(lost[0]).toBeGreaterThan(frames[0]!.t);
     source.stop();
   });
+
+  it('keeps frame timestamps increasing across stop() and start()', async () => {
+    const now = vi.spyOn(performance, 'now');
+    now.mockReturnValue(1000);
+    const { stream } = fakeStream();
+    const { video, source, frames } = setup(async () => stream);
+    mp.detect.mockReturnValue({ landmarks: [pose] });
+    await source.start();
+    now.mockReturnValue(6000);
+    video.step();
+    source.stop();
+
+    now.mockReturnValue(50000);
+    await source.start();
+    now.mockReturnValue(50010);
+    video.step();
+    expect(frames).toHaveLength(2);
+    expect(frames[1]!.t).toBeGreaterThan(frames[0]!.t);
+    const raw = mp.detect.mock.calls.map((c) => c[1] as number);
+    expect(raw).toEqual([5000, 10]);
+    source.stop();
+  });
 });
 
 describe('public entry', () => {

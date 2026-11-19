@@ -35,7 +35,7 @@ type Landmarker = {
  * A `PoseSource` backed by the webcam and the MediaPipe Pose Landmarker. Inference runs on
  * device. `@mediapipe/tasks-vision` is imported lazily inside `start()`. Failures are reported
  * through `onError`; `start()` never throws. Frames without a pose call `onPoseLost(t)` and
- * deliver no `Frame`. Timestamps are milliseconds since `start()` and strictly increase.
+ * deliver no `Frame`. Timestamps are cumulative milliseconds across starts and strictly increase, even after a restart.
  */
 export function createMediaPipeSource(opts: MediaPipeSourceOptions = {}): PoseSource {
   const frameListeners = new Set<(f: Frame) => void>();
@@ -49,7 +49,12 @@ export function createMediaPipeSource(opts: MediaPipeSourceOptions = {}): PoseSo
   let video: VideoLike | null = null;
   let handle: number | undefined;
   let origin = 0;
+  /** Last emitted timestamp. Never reset, so output stays increasing across restarts. */
   let lastT = -Infinity;
+  /** Cumulative offset added to the per-session clock, carried across restarts. */
+  let offset = 0;
+  /** Last timestamp given to the current landmarker (its own clock, reset per start). */
+  let lastRaw = -Infinity;
 
   function report(code: SourceErrorCode, message: string): void {
     for (const fn of [...errorListeners]) fn({ code, message });
@@ -79,11 +84,14 @@ export function createMediaPipeSource(opts: MediaPipeSourceOptions = {}): PoseSo
     if (!video) return;
     const tick = (): void => {
       if (gen !== generation || !running || !video || !landmarker) return;
-      let t = performance.now() - origin;
+      let raw = performance.now() - origin;
+      if (raw <= lastRaw) raw = lastRaw + 0.001;
+      lastRaw = raw;
+      let t = offset + raw;
       if (t <= lastT) t = lastT + 0.001;
       lastT = t;
       try {
-        const result = landmarker.detectForVideo(video, t);
+        const result = landmarker.detectForVideo(video, raw);
         const pose = result.landmarks[0];
         if (pose && pose.length > 0) {
           const frame: Frame = {
@@ -181,7 +189,8 @@ export function createMediaPipeSource(opts: MediaPipeSourceOptions = {}): PoseSo
       }
       if (cancelled()) return;
       origin = performance.now();
-      lastT = -Infinity;
+      lastRaw = -Infinity;
+      offset = Number.isFinite(lastT) ? lastT : 0;
       schedule(gen);
     },
     stop() {
