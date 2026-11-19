@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { createPausableClock } from './pausableClock';
 import { FakeTime } from './testSupport';
@@ -46,5 +47,35 @@ describe('pausable clock', () => {
     clock.resume();
     time.advance(10);
     expect(fired).toEqual(['a']);
+  });
+
+  // Review finding: paused demo playhead. Pausing must neither add nor drop time.
+  it('property: a timer fires after exactly its delay of running time, however pauses are interleaved', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 0, max: 400 }), { minLength: 1, maxLength: 8 }),
+        fc.array(fc.tuple(fc.integer({ min: 0, max: 300 }), fc.integer({ min: 0, max: 100_000 })), { maxLength: 10 }),
+        (delays, pattern) => {
+          const { time, clock } = setup();
+          const firedAt: number[] = delays.map(() => -1);
+          let running = 0;
+          delays.forEach((d, i) => clock.setTimeout(() => (firedAt[i] = time.now), d));
+          const expectFired = () =>
+            delays.forEach((d, i) => expect(firedAt[i] !== -1, `delay ${d} at running ${running}`).toBe(d <= running));
+          for (const [run, pause] of pattern) {
+            time.advance(run);
+            running += run;
+            expectFired();
+            clock.pause();
+            time.advance(pause);
+            expectFired();
+            clock.resume();
+          }
+          time.advance(1000);
+          running += 1000;
+          expectFired();
+        },
+      ),
+    );
   });
 });

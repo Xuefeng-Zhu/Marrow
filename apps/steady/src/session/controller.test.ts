@@ -1,4 +1,5 @@
 import { createEngine, replay, type Frame, type PoseSource, type SourceError } from 'marrow-core';
+import fc from 'fast-check';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OUTCOMES, type ClipId, type RomOutcome, type StanceOutcome } from '../clips/outcomes';
 import { buildResult, type RunOutcome } from '../logic/result';
@@ -226,6 +227,33 @@ describe('deadlines are enforced by a timer when frames stop (R5.1, R7.1, R8.2)'
     await advance(61000);
     expect(outcomes).toHaveLength(1);
     expect(buildResult(outcomes[0]!).saveable).toBe(false);
+  });
+});
+
+describe('deadline property: a run ends on time wherever the frames stop (R5.1, R7.1)', () => {
+  // ROM cut-offs stay under the time of the third rep, which ends a ROM run early (R5.1).
+  it.each([
+    ['chair-stand', 30000, 'window', 20000],
+    ['shoulder-flexion-left', 60000, 'timeout', 6000],
+    ['knee-flexion-right', 60000, 'timeout', 6000],
+  ] as const)('%s ends exactly once at %i ms for any frame cut-off', async (id, deadline, stop, maxCutoff) => {
+    const test = TEST_BY_ID[id];
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: maxCutoff }), async (cutoff) => {
+        const { source } = silentSource(framesUntil(test, cutoff));
+        const { c, outcomes } = harness(test, source);
+        c.start();
+        await advance(5000);
+        await advance(deadline - 1000);
+        expect(outcomes).toHaveLength(0);
+        await advance(1000);
+        expect(outcomes).toHaveLength(1);
+        expect(outcomes[0]!.stop).toBe(stop);
+        await advance(120000);
+        expect(outcomes).toHaveLength(1);
+      }),
+      { numRuns: 12 },
+    );
   });
 });
 

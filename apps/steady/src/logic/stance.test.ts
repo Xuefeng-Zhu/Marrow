@@ -108,6 +108,32 @@ describe('early sway warning (finding: warning before hold:start)', () => {
   });
 });
 
+describe('early sway warning properties (finding: warning before hold:start)', () => {
+  it('property: buffered warnings at or after the lift stop the timer at the earliest one, earlier ones are dropped', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 100_000 }),
+        fc.array(fc.integer({ min: -3000, max: 40_000 }), { maxLength: 8 }),
+        (lift, offsets) => {
+          const warnings = offsets.map((o) => lift + o);
+          const events = [...warnings.map((t) => sway(t)), start(lift)];
+          const result = run(events).result();
+          const valid = warnings.filter((t) => t >= lift);
+          if (valid.length === 0) {
+            expect(result).toBeNull();
+          } else {
+            const ms = Math.min(...valid) - lift;
+            expect(result).toEqual(
+              ms >= CAP ? { seconds: 30, reason: 'cap' } : { seconds: Math.floor(ms / 100) / 10, reason: 'sway' },
+            );
+          }
+        },
+      ),
+      RUNS,
+    );
+  });
+});
+
 type Raw =
   | { k: 'tick' | 'swayWarn' | 'otherWarn' | 'released' | 'lost' | 'start'; dt: number; lag: number };
 

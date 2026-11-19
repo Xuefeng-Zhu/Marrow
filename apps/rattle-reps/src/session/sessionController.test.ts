@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getFixture } from '../fixtures';
 import { getWorkout } from '../movements/registry';
 import { createSessionController, type SessionControllerOptions, type SessionResult } from './sessionController';
+import { depthRuleFor } from './depthCheck';
 import { createSource } from './sourceFactory';
 import { FakeTime, ScriptedSource } from './testSupport';
 
@@ -97,6 +98,47 @@ describe('session controller', () => {
     expect(summary.reps).toBe(6);
     expect(summary.cleanReps).toBe(3);
   });
+
+  // Review finding: terminal ROM sample. The rom:sample of the frame that reaches the target must be logged once.
+  it.each(['squat', 'push-up'])(
+    'property: %s ends at any rep target with the terminal rom:sample and shallow warning logged exactly once',
+    async (id) => {
+      const probe = scripted(id, { kind: 'reps', reps: 999 });
+      await probe.controller.start();
+      for (const f of clip(id)) probe.source.emit(f);
+      const clipReps = repEvents(probe.controller.getEvents()).length;
+      expect(clipReps).toBeGreaterThan(0);
+      await fc.assert(
+        fc.asyncProperty(fc.integer({ min: 1, max: clipReps }), async (n) => {
+          const { source, controller, results } = scripted(id, { kind: 'reps', reps: n });
+          await controller.start();
+          for (const f of clip(id)) {
+            source.emit(f);
+            await flush();
+            if (results.length) break;
+          }
+          expect(results).toHaveLength(1);
+          const { events, summary } = results[0]!;
+          const lastRep = repEvents(events).at(-1)!;
+          expect(lastRep.count).toBe(n);
+          expect(summary.reps).toBe(n);
+          const samples = events.filter((e) => e.type === 'rom:sample' && e.t === lastRep.t);
+          expect(samples).toHaveLength(1);
+          const rule = depthRuleFor(id);
+          const sample = samples[0] as Extract<MarrowEvent, { type: 'rom:sample' }>;
+          if (rule && sample.metric === rule.metric && sample.min > rule.bound) {
+            const prevT = repEvents(events).at(-2)?.t ?? Number.NEGATIVE_INFINITY;
+            const warned = events.filter(
+              (e) => e.type === 'form:warning' && e.ruleId === 'shallow-depth' && e.t > prevT && e.t <= lastRep.t,
+            );
+            expect(warned).toHaveLength(1);
+          }
+          expect(events.every((e) => e.t <= lastRep.t)).toBe(true);
+        }),
+        { numRuns: 20 },
+      );
+    },
+  );
 
   it('stop closes an open hold at the stop time', async () => {
     const { source, controller, results } = scripted('plank', { kind: 'hold', seconds: 999 });
