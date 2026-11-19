@@ -23,7 +23,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests: every clip passes `parseFixture`; regenerating reproduces the committed files; replaying each clip through `createEngine` or `replay()` with the matching spec gives the designed events (rep counts, hold start and end times, sway warning time, `rom:sample` extremes), so the specs are tuned against the clips (R13.1, R13.2, R13.4).
   - Requirements: R13.1, R13.2, R13.4, R13.5.
 
-- [ ] 4. ROM and asymmetry logic with properties
+- [x] 4. ROM and asymmetry logic with properties
   - `src/logic/rom.ts` (`isValidAngle`, `kneeFlexion`, `selectPeak`) and `src/logic/asymmetry.ts` (`asymmetryPct`, `describeAsymmetry`).
   - Tests: unit cases (empty input, NaN only, equal sides, zero sides) plus fast-check P1 to P8.
   - Requirements: R5.2 to R5.5, R6. Properties: P1 to P8.
