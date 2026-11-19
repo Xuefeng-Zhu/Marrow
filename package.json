@@ -4,7 +4,8 @@
   "license": "MIT",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "tools/*"
   ],
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
