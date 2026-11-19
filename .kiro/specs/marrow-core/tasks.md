@@ -26,7 +26,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Add `zod` to the core dependencies.
   - Keeps typecheck, test and build green. Requirements: R5.
 
-- [ ] 5. Metric evaluation
+- [x] 5. Metric evaluation
   - `src/engine/metrics.ts`: evaluate a spec's metrics for a frame (normalisation, plane, visibility gating to `NaN`).
   - Tests: unit cases against hand-built frames, plus P5 through the metric layer.
   - Keeps typecheck, test and build green. Requirements: R3.7 to R3.9.
