@@ -28,18 +28,19 @@ export interface Store {
 export function createRattleStore(): Store {
   let idb: UseStore | null = null;
   const memory = new Map<string, unknown>();
-  let persistent = true;
+  /** False after the first idb failure. */
+  let broken = false;
   /** History in memory only, because the stored history has a version this app does not know. */
   let historyLocked = false;
   let chain: Promise<unknown> = Promise.resolve();
 
   function backend(): UseStore | null {
-    if (!persistent) return null;
+    if (broken) return null;
     try {
       idb ??= createStore('rattle-reps', 'kv');
       return idb;
     } catch {
-      persistent = false;
+      broken = true;
       return null;
     }
   }
@@ -50,7 +51,7 @@ export function createRattleStore(): Store {
       try {
         return await get(key, db);
       } catch {
-        persistent = false;
+        broken = true;
       }
     }
     return memory.get(key);
@@ -63,7 +64,7 @@ export function createRattleStore(): Store {
         await set(key, value, db);
         return;
       } catch {
-        persistent = false;
+        broken = true;
       }
     }
     memory.set(key, value);
@@ -76,7 +77,7 @@ export function createRattleStore(): Store {
       try {
         await del(key, db);
       } catch {
-        persistent = false;
+        broken = true;
       }
     }
   }
@@ -93,7 +94,6 @@ export function createRattleStore(): Store {
     if (raw !== undefined && raw !== null && !hasKnownVersion(raw)) {
       // Keep the unknown data on disk untouched, and use memory for this session.
       historyLocked = true;
-      persistent = false;
       return [];
     }
     return decodeHistory(raw);
@@ -101,7 +101,7 @@ export function createRattleStore(): Store {
 
   return {
     get persistent() {
-      return persistent;
+      return !broken && !historyLocked;
     },
     loadHistory: () => serialized(readHistory),
     addEntry: (entry) =>
@@ -125,6 +125,7 @@ export function createRattleStore(): Store {
       }),
     clearAll: () =>
       serialized(async () => {
+        // The disk record is deleted even when it has an unknown version: the user asked for it.
         historyLocked = false;
         await remove(HISTORY_KEY);
         await remove(SETTINGS_KEY);

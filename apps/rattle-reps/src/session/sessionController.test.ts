@@ -29,6 +29,32 @@ function repEvents(events: readonly MarrowEvent[]) {
 }
 
 describe('session controller', () => {
+  it('stop during startup cancels the start, stops the created source and ends the set', async () => {
+    const source = new ScriptedSource();
+    const results: SessionResult[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const controller = createSessionController({
+      workout: getWorkout('squat')!,
+      mode: 'camera',
+      target: { kind: 'reps', reps: 5 },
+      createSource: async () => {
+        await gate;
+        return { source, pause: () => undefined, resume: () => undefined };
+      },
+      onEnd: (r) => results.push(r),
+    });
+    const started = controller.start();
+    controller.stop();
+    expect(controller.getView().status).toBe('ended');
+    expect(results).toHaveLength(1);
+    release();
+    await started;
+    expect(source.stopCount).toBe(1);
+    expect(source.started).toBe(false);
+    expect(controller.getView().status).toBe('ended');
+  });
+
   it('the counter equals the count of the last rep event', async () => {
     const { source, controller } = scripted('squat', { kind: 'reps', reps: 99 });
     await controller.start();

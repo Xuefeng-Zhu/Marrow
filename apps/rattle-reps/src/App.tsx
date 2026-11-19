@@ -18,7 +18,7 @@ const HEIGHT = 480;
 
 const spec = getWorkout('squat')!.spec;
 
-/** A tiny stand-in for the demo clip: a figure that bobs up and down at 20 fps. */
+/** Temporary stand-in for the demo clip until task 18 wires App to the session controller and fixtures: a figure that bobs up and down at 20 fps. */
 function createStubSource(): PoseSource {
   const frameListeners = new Set<(f: Frame) => void>();
   let timer: ReturnType<typeof setInterval> | undefined;

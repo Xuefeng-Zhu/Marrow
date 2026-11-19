@@ -142,6 +142,19 @@ describe('store', () => {
     }
   });
 
+  it('clearAll removes unknown-version data from disk and makes the store persistent again', async () => {
+    const db = createStore('rattle-reps', 'kv');
+    await set('history', { v: 2, data: [] }, db);
+    const store = createRattleStore();
+    await store.loadHistory();
+    expect(store.persistent).toBe(false);
+    await store.clearAll();
+    expect(await get('history', db)).toBeUndefined();
+    expect(store.persistent).toBe(true);
+    await store.addEntry(entry(1));
+    expect((await get('history', db)) !== undefined).toBe(true);
+  });
+
   it('ignores an unknown version without overwriting it', async () => {
     const db = createStore('rattle-reps', 'kv');
     const future = { v: 2, data: [{ shape: 'new' }] };

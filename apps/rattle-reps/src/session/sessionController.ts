@@ -264,7 +264,13 @@ export function createSessionController(opts: SessionControllerOptions): Session
       dispatch({ type: 'status', status: 'running' });
     },
     stop() {
-      if (ended || disposed || !pipeline) return;
+      if (ended || disposed) return;
+      if (!pipeline) {
+        // Stop during startup: cancel the pending start (it stops the source it creates) and end empty.
+        generation += 1;
+        finish('stop', 0);
+        return;
+      }
       finish('stop', lastT ?? startT ?? 0);
     },
     dispose() {
