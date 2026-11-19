@@ -84,7 +84,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-1. A ROM run SHALL end when the user has completed three engine `rep` events, when the user presses "Done" or "Stop", or after 60 seconds, whichever comes first.
+1. A ROM run SHALL end when the user has completed three engine `rep` events, when the user presses "Done" or "Stop", or after 60 seconds, whichever comes first. The 60 seconds SHALL be enforced by a timer as well as by frame timestamps, so the run ends even if no more frames arrive.
 2. The result SHALL be the peak flexion in degrees: the largest valid flexion among the `rom:sample` events and the largest valid flexion seen in the frames since the last sample (so that a raise held at the end is not lost).
 3. A flexion value SHALL be valid when it is a finite number in the range 0 to 180 degrees inclusive. Invalid values SHALL be ignored.
 4. IF no valid value exists, THEN the run SHALL end with a "No movement detected" outcome and SHALL NOT be saved.
@@ -108,7 +108,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 
-1. A chair stand run SHALL last exactly 30 seconds of pipeline time, measured from the first frame timestamp after the countdown, and SHALL show the remaining seconds.
+1. A chair stand run SHALL last exactly 30 seconds of pipeline time, measured from the first frame timestamp after the countdown, and SHALL show the remaining seconds. The end of the window SHALL be enforced by a timer as well as by frame timestamps, so the run ends and the final count is fixed even if no more frames arrive.
 2. The final count SHALL equal the number of engine `rep` events with timestamps inside the 30-second window, plus one if, at the end of the window, the engine phase is `standing` (the user is up and not yet seated again, which the standard test counts when the stand is more than halfway complete). The extra one SHALL be added only when the window closes and SHALL NOT be shown while the window is open. Cycles the engine discards as faster than the spec's `minRepMs` produce no `rep` and no bonus.
 3. Events with a timestamp after the 30-second window SHALL NOT be counted.
 4. The count SHALL never decrease during a run (including when the window closes and after a discarded fast cycle) and SHALL never exceed the number of in-window `rep` events plus one.
@@ -122,7 +122,7 @@ Acceptance criteria:
 Acceptance criteria:
 
 1. WHEN the engine emits `hold:start` for the stance hold, THEN the timer SHALL start from the hold's start time (the time the lifted condition began, as given by the event).
-2. The test SHALL stop at the first of these conditions: (a) `hold:end` with reason `released` (foot down); (b) `form:warning` for the sway rule (sway beyond the threshold); (c) `hold:end` with reason `lost-pose`; (d) the timer reaches the 30-second cap; (e) the user presses "Stop". A `form:warning` for the sway rule that arrives before `hold:start` but with a timestamp at or after the hold's start time SHALL count as a sway stop at that warning's time. A warning timestamped before the hold's start time SHALL be ignored.
+2. The test SHALL stop at the first of these conditions: (a) `hold:end` with reason `released` (foot down); (b) `form:warning` for the sway rule (sway beyond the threshold); (c) `hold:end` with reason `lost-pose`; (d) the timer reaches the 30-second cap, which a timer SHALL enforce even if no more frames arrive; (e) the user presses "Stop". A `form:warning` for the sway rule that arrives before `hold:start` but with a timestamp at or after the hold's start time SHALL count as a sway stop at that warning's time. A warning timestamped before the hold's start time SHALL be ignored.
 3. The result in seconds SHALL be the time from the hold start to the stop condition, never negative and never more than 30, rounded down to one decimal.
 4. IF the test ends before any `hold:start` was emitted, THEN the result SHALL be "Foot was not lifted" and SHALL NOT be saved.
 5. The result card SHALL say why the test stopped in plain words (for example "Your foot touched down", "You swayed past the limit", "You reached 30 seconds").

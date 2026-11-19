@@ -54,7 +54,7 @@ When a task adds a dependency, update `package-lock.json` in the same commit (`n
   - Tests with a fake `speechSynthesis`: cancel before speak, cancel on stop, unavailable case hides the control and still returns the text, same text is not repeated within 4 s.
   - Requirements: R4.3, R4.5, R14.
 
-- [ ] 10. Session machine and controller
+- [x] 10. Session machine and controller
   - `src/session/machine.ts` (pure reducer for screens and run states), `src/services/source.ts` (`createSource(mode, test)`; the camera source is created only on request), `src/logic/readiness.ts`, and `src/session/useSession.ts` that wires the pipeline, the logic modules, the 5-second countdown and the end-of-run rules for ROM, chair stand and stance.
   - Tests: reducer cannot reach `running` except from `countdown` and cannot start before the safety confirmation (R3.3); readiness needs one continuous second (R3.4); a headless controller test runs every demo clip to its result with a fake clock and checks the result equals the designed outcome; ROM run ends after 3 reps, on Done, or at 60 s (R5.1); camera errors surface typed messages and offer the demo (R3.5); `stop` releases the source (R4.7).
   - Requirements: R3.4 to R3.6, R4, R5.1, R7.1, R8.2.
