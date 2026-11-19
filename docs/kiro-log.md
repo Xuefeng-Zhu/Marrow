@@ -11,4 +11,4 @@ How Marrow was built with Kiro, one phase at a time. Source material for `KIRO.m
 | Rattle Reps spec | #9 → #12 | Kiro Web | 3 | paused playhead, latched warnings, hold clipping |
 | Steady tasks 1–10 | #14 → #15 | Kiro Web | 1 + `/kiro fix` | spec findings folded into tests |
 | Rattle Reps tasks 1–9 | #13 → #16 | Kiro Web | 1 (clean) | 209 tests total |
-| Tooling: MCP server, power, PBT sweep | #23 | Kiro MCP, power, custom agent | n/a | property-hunter sweep of all three specs found no counterexamples; 7 review findings now have property tests (see `.agents/tasks/task-kiro-tooling-mcp-power-pbt/pbt-sweep.md`) |
+| Tooling: MCP server, power, PBT sweep | #23 → PR | Kiro MCP, power, custom agent | n/a | property-hunter sweep of all three specs found no counterexamples, a11y-reviewer found nothing to fix; 7 review findings now have property tests (see `docs/pbt-sweep.md`) |
