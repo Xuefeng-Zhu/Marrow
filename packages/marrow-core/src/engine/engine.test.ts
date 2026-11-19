@@ -1,5 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { LM } from '../landmarks';
 import { parseMovementSpec } from '../spec/parse';
 import type { MovementSpec } from '../spec/schema';
 import { arbSpecJson } from '../testing/arbitraries';
@@ -408,7 +409,9 @@ describe('engine properties', () => {
           const plain = run(spec, frames);
           const withNaN = run(spec, withNaNFrames(frames, positions));
           expect(ofType(withNaN, 'rep')).toHaveLength(ofType(plain, 'rep').length);
-          expect(withNaN).toEqual(plain);
+          // Other metrics of the spec may stay valid on these frames, so compare the rep cycle only.
+          const cycle = (ev: MarrowEvent[]) => ev.filter((e) => e.type === 'phase' || e.type === 'rep');
+          expect(cycle(withNaN)).toEqual(cycle(plain));
         },
       ),
       RUNS,
@@ -421,3 +424,330 @@ function createRepCount(spec: MovementSpec, frames: Frame[]): number {
   for (const f of frames) e.push(f);
   return e.repCount;
 }
+
+/** Frame with the left elbow shifted so the offset (elbow - shoulder, x) in torso units is `d`. */
+function offsetFrame(t: number, d: number, angle = 90): Frame {
+  const f = angleFrame(t, angle);
+  const shoulder = f.landmarks[LM.leftShoulder]!;
+  f.landmarks[LM.leftElbow] = { ...f.landmarks[LM.leftElbow]!, x: shoulder.x + d * 0.4 };
+  return f;
+}
+
+function holdSpec(overrides: Record<string, unknown> = {}): MovementSpec {
+  return elbowSpec({
+    minRepMs: 0,
+    holds: [{ id: 'bent-hold', phase: 'bent', minMs: 1000, tickMs: 500 }],
+    rom: [{ metric: 'm0', sampleOn: 'rep' }],
+    ...overrides,
+  });
+}
+
+function formSpec(rule: Record<string, unknown>, phases?: string[]): MovementSpec {
+  return elbowSpec({
+    minRepMs: 0,
+    metrics: {
+      m0: { kind: 'angle', points: ['leftShoulder', 'leftElbow', 'leftWrist'] },
+      d: { kind: 'offset', points: ['leftElbow', 'leftShoulder'], axis: 'x' },
+    },
+    formRules: [{ id: 'r', metric: 'd', debounceMs: 300, message: 'msg', ...(phases ? { phases } : {}), ...rule }],
+  });
+}
+
+describe('holds (R6c)', () => {
+  it('starts after minMs with the condition start time, ticks every tickMs, ends released', () => {
+    const engine = createEngine(holdSpec());
+    const ev: MarrowEvent[] = [];
+    for (let t = 0; t <= 2000; t += 100) ev.push(...engine.push(angleFrame(t, 50)));
+    ev.push(...engine.push(angleFrame(2100, 165)));
+    expect(ev.filter((e) => e.type.startsWith('hold:'))).toEqual([
+      { type: 'hold:start', t: 0, holdId: 'bent-hold' },
+      { type: 'hold:tick', t: 1500, holdId: 'bent-hold', elapsedMs: 1500 },
+      { type: 'hold:tick', t: 2000, holdId: 'bent-hold', elapsedMs: 2000 },
+      { type: 'hold:end', t: 2100, holdId: 'bent-hold', durationMs: 2100, reason: 'released' },
+    ]);
+  });
+
+  it('emits nothing when the condition lasts less than minMs', () => {
+    const engine = createEngine(holdSpec());
+    const ev = [0, 300, 600, 900].flatMap((t) => engine.push(angleFrame(t, 50)));
+    ev.push(...engine.push(angleFrame(950, 165)));
+    expect(ev.some((e) => e.type.startsWith('hold:'))).toBe(false);
+  });
+
+  it('ends with lost-pose when the next push comes after a gap, once', () => {
+    const engine = createEngine(holdSpec());
+    for (let t = 0; t <= 1200; t += 100) engine.push(angleFrame(t, 50));
+    const ev = engine.push(angleFrame(2000, 50));
+    expect(ev[0]).toEqual({ type: 'hold:end', t: 2000, holdId: 'bent-hold', durationMs: 1200, reason: 'lost-pose' });
+    expect(ev.filter((e) => e.type === 'hold:end')).toHaveLength(1);
+  });
+
+  it('ends with lost-pose on a NaN push after the gap', () => {
+    const engine = createEngine(holdSpec());
+    for (let t = 0; t <= 1200; t += 100) engine.push(angleFrame(t, 50));
+    expect(engine.push(nanFrame(1500))).toEqual([]);
+    const ev = engine.push(nanFrame(1800));
+    expect(ev).toEqual([{ type: 'hold:end', t: 1800, holdId: 'bent-hold', durationMs: 1200, reason: 'lost-pose' }]);
+  });
+
+  it('restarts the hold timer after a lost-pose end when the phase is unchanged', () => {
+    const engine = createEngine(holdSpec());
+    for (let t = 0; t <= 1200; t += 100) engine.push(angleFrame(t, 50));
+    engine.push(angleFrame(3000, 50));
+    const ev = [3500, 4000, 4100].flatMap((t) => engine.push(angleFrame(t, 50)));
+    expect(ev).toEqual([{ type: 'hold:start', t: 3000, holdId: 'bent-hold' }]);
+  });
+});
+
+describe('advance (R6f)', () => {
+  function active(): { engine: ReturnType<typeof createEngine>; last: number } {
+    const engine = createEngine(holdSpec());
+    for (let t = 0; t <= 1200; t += 100) engine.push(angleFrame(t, 50));
+    return { engine, last: 1200 };
+  }
+
+  it('ends an active hold only when the gap exceeds holdGapMs', () => {
+    const { engine, last } = active();
+    expect(engine.advance(last + 500)).toEqual([]);
+    expect(engine.advance(last + 501)).toEqual([
+      { type: 'hold:end', t: last + 501, holdId: 'bent-hold', durationMs: 1200, reason: 'lost-pose' },
+    ]);
+    expect(engine.advance(last + 900)).toEqual([]);
+  });
+
+  it('ignores t not newer than the latest seen t', () => {
+    const { engine, last } = active();
+    expect(engine.advance(last)).toEqual([]);
+    expect(engine.advance(last - 100)).toEqual([]);
+  });
+
+  it('does not change phase, reps or partial cycle', () => {
+    const { engine } = active();
+    engine.advance(5000);
+    expect(engine.phase).toBe('bent');
+    expect(engine.repCount).toBe(0);
+    const ev = engine.push(angleFrame(5100, 165));
+    expect(ev.find((e) => e.type === 'rep')).toBeUndefined();
+    const ev2 = [5200, 5300].flatMap((t) => engine.push(angleFrame(t, 50)));
+    expect(ev2.some((e) => e.type === 'phase')).toBe(true);
+  });
+
+  it('emits nothing without an active hold', () => {
+    const engine = createEngine(holdSpec());
+    engine.push(angleFrame(0, 50));
+    expect(engine.advance(5000)).toEqual([]);
+  });
+
+  it('triggers a hold:end rom sample through advance', () => {
+    const engine = createEngine(holdSpec({ rom: [{ metric: 'm0', sampleOn: 'hold:end' }] }));
+    for (let t = 0; t <= 1200; t += 100) engine.push(angleFrame(t, t === 600 ? 40 : 50));
+    const ev = engine.advance(3000);
+    expect(ev.map((e) => e.type)).toEqual(['hold:end', 'rom:sample']);
+    const rom = ev[1] as Extract<MarrowEvent, { type: 'rom:sample' }>;
+    expect(rom.t).toBe(3000);
+    expect(rom.min).toBeCloseTo(40, 6);
+    expect(rom.max).toBeCloseTo(50, 6);
+    expect(rom.trigger).toBe('hold:end');
+  });
+
+  it('P23 (pose-loss timeout): advance ends the hold once and a later push adds no duplicate', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1000, max: 3000 }),
+        fc.integer({ min: 1, max: 5000 }),
+        fc.integer({ min: 20, max: 200 }),
+        (holdMs, extra, dt) => {
+          const spec = holdSpec();
+          const engine = createEngine(spec);
+          let last = 0;
+          for (let t = 0; ; t += dt) {
+            engine.push(angleFrame(t, 50));
+            last = t;
+            if (t >= holdMs) break;
+          }
+          const t = last + spec.holdGapMs + extra;
+          const ev = engine.advance(t);
+          expect(ev.filter((e) => e.type === 'hold:end')).toEqual([
+            { type: 'hold:end', t, holdId: 'bent-hold', durationMs: last, reason: 'lost-pose' },
+          ]);
+          const later = engine.push(angleFrame(t, 50));
+          expect(later.filter((e) => e.type === 'hold:end')).toEqual([]);
+        },
+      ),
+      RUNS,
+    );
+  });
+
+  it('P18 (hold bounds): durations reach minMs, ticks are tickMs apart, starts pair with at most one end', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.constantFrom(50, 165, NaN), fc.integer({ min: 1, max: 700 })), { minLength: 1, maxLength: 60 }),
+        (steps) => {
+          const spec = holdSpec();
+          const engine = createEngine(spec);
+          let t = 0;
+          const ev: MarrowEvent[] = [];
+          for (const [v, dt] of steps) {
+            t += dt;
+            ev.push(...engine.push(Number.isNaN(v) ? nanFrame(t) : angleFrame(t, v)));
+          }
+          const hold = spec.holds![0]!;
+          let open = false;
+          let lastTick: number | null = null;
+          for (const e of ev) {
+            if (e.type === 'hold:start') {
+              expect(open).toBe(false);
+              open = true;
+              lastTick = null;
+            } else if (e.type === 'hold:tick') {
+              expect(open).toBe(true);
+              if (lastTick !== null) expect(e.t - lastTick).toBeGreaterThanOrEqual(hold.tickMs);
+              lastTick = e.t;
+            } else if (e.type === 'hold:end') {
+              expect(open).toBe(true);
+              expect(e.durationMs).toBeGreaterThanOrEqual(hold.minMs);
+              open = false;
+            }
+          }
+        },
+      ),
+      RUNS,
+    );
+  });
+});
+
+describe('form warnings (R6d)', () => {
+  it('warns in an applicable phase', () => {
+    const engine = createEngine(formSpec({ max: 0.25 }, ['bent']));
+    const ev = [0, 100, 200, 300, 400].flatMap((t) => engine.push(offsetFrame(t, 0.4, 50)));
+    expect(ev.filter((e) => e.type === 'form:warning')).toHaveLength(1);
+  });
+
+  it('counts the debounce from the first violating frame and reports the value', () => {
+    const engine = createEngine(formSpec({ max: 0.25 }));
+    const ev = [0, 100, 200, 300, 400, 500].flatMap((t) => engine.push(offsetFrame(t, 0.4)));
+    const w = ev.filter((e) => e.type === 'form:warning');
+    expect(w).toHaveLength(1);
+    expect(w[0]).toMatchObject({ t: 300, ruleId: 'r', message: 'msg' });
+    expect((w[0] as Extract<MarrowEvent, { type: 'form:warning' }>).value).toBeCloseTo(0.4, 6);
+  });
+
+  it('ignores violations outside the rule phases', () => {
+    const engine = createEngine(formSpec({ max: 0.25 }, ['bent']));
+    const ev = [0, 100, 200, 300, 400].flatMap((t) => engine.push(offsetFrame(t, 0.4)));
+    expect(ev.some((e) => e.type === 'form:warning')).toBe(false);
+  });
+
+  it('handles min bounds', () => {
+    const engine = createEngine(formSpec({ min: 0.1 }));
+    const ev = [0, 200, 400].flatMap((t) => engine.push(offsetFrame(t, -0.2)));
+    expect(ev.filter((e) => e.type === 'form:warning')).toHaveLength(1);
+  });
+
+  it('does not clear the latch inside the hysteresis margin, and NaN neither raises nor clears', () => {
+    const engine = createEngine(formSpec({ max: 0.25 }));
+    const ev: MarrowEvent[] = [];
+    for (const t of [0, 400]) ev.push(...engine.push(offsetFrame(t, 0.4)));
+    // 0.22 is within bounds but inside the 0.05 margin: still latched.
+    for (const t of [500, 600]) engine.push(offsetFrame(t, 0.22));
+    const hidden = offsetFrame(650, 0);
+    hidden.landmarks[LM.leftElbow] = { ...hidden.landmarks[LM.leftElbow]!, visibility: 0 };
+    engine.push(hidden);
+    for (const t of [700, 1200]) ev.push(...engine.push(offsetFrame(t, 0.4)));
+    expect(ev.filter((e) => e.type === 'form:warning')).toHaveLength(1);
+  });
+
+  it('P19 (form debounce): short violations never warn, a long one warns exactly once', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 20 }),
+        fc.integer({ min: 20, max: 300 }),
+        fc.double({ min: 0.3, max: 1, noNaN: true }),
+        (frames, dt, d) => {
+          const spec = formSpec({ max: 0.25 });
+          const rule = spec.formRules![0]!;
+          const engine = createEngine(spec);
+          const ev: MarrowEvent[] = [];
+          for (let i = 0; i < frames; i++) ev.push(...engine.push(offsetFrame(i * dt, d)));
+          ev.push(...engine.push(offsetFrame(frames * dt, 0)));
+          const span = (frames - 1) * dt;
+          const warnings = ev.filter((e) => e.type === 'form:warning').length;
+          expect(warnings).toBe(span >= rule.debounceMs ? 1 : 0);
+        },
+      ),
+      RUNS,
+    );
+  });
+
+  it('P22 (form rearm): a compliant value inside the margin re-arms the rule, for any metric kind', () => {
+    const kinds = fc.constantFrom('offset', 'angle');
+    fc.assert(
+      fc.property(kinds, fc.boolean(), fc.double({ min: 0.001, max: 0.5, noNaN: true }), (kind, useMax, over) => {
+        const isAngle = kind === 'angle';
+        const h = isAngle ? 8 : 0.05;
+        const unit = isAngle ? 10 : 0.2;
+        const bound = isAngle ? 90 : 0.2;
+        const bad = (useMax ? bound + over * unit * 4 : bound - over * unit * 4) * 1;
+        const good = useMax ? bound - h - 0.01 * unit : bound + h + 0.01 * unit;
+        const bounds = useMax ? { max: bound } : { min: bound };
+        const spec = isAngle
+          ? elbowSpec({
+              minRepMs: 0,
+              formRules: [{ id: 'r', metric: 'm0', debounceMs: 300, message: 'msg', ...bounds }],
+            })
+          : formSpec(bounds);
+        const frame = (t: number, v: number) => (isAngle ? angleFrame(t, v) : offsetFrame(t, v));
+        const engine = createEngine(spec);
+        const ev: MarrowEvent[] = [];
+        for (const t of [0, 300]) ev.push(...engine.push(frame(t, bad)));
+        ev.push(...engine.push(frame(400, good)));
+        for (const t of [500, 800]) ev.push(...engine.push(frame(t, bad)));
+        expect(ev.filter((e) => e.type === 'form:warning')).toHaveLength(2);
+      }),
+      RUNS,
+    );
+  });
+});
+
+describe('rom sampling (R6e)', () => {
+  it('samples min and max since the previous trigger on rep and ignores NaN', () => {
+    const spec = holdSpec({ holds: undefined });
+    const engine = createEngine(spec);
+    const frames = [
+      angleFrame(0, 170),
+      angleFrame(100, 50),
+      nanFrame(200),
+      angleFrame(300, 45),
+      angleFrame(400, 165),
+      angleFrame(500, 50),
+      angleFrame(600, 165),
+    ];
+    const roms = frames.flatMap((f) => engine.push(f)).filter((e) => e.type === 'rom:sample') as Extract<
+      MarrowEvent,
+      { type: 'rom:sample' }
+    >[];
+    expect(roms).toHaveLength(2);
+    expect(roms[0]).toMatchObject({ t: 400, metric: 'm0', trigger: 'rep' });
+    expect(roms[0]!.min).toBeCloseTo(45, 6);
+    expect(roms[0]!.max).toBeCloseTo(170, 6);
+    expect(roms[1]!.min).toBeCloseTo(50, 6);
+    expect(roms[1]!.max).toBeCloseTo(165, 6);
+  });
+
+  it('samples on phase entry', () => {
+    const engine = createEngine(holdSpec({ rom: [{ metric: 'm0', sampleOn: 'phase:bent' }] }));
+    const ev = [angleFrame(0, 170), angleFrame(100, 50)].flatMap((f) => engine.push(f));
+    expect(ev.map((e) => e.type)).toEqual(['phase', 'phase', 'rom:sample']);
+  });
+
+  it('reset clears extremes, holds and latches', () => {
+    const spec = holdSpec();
+    const engine = createEngine(spec);
+    const frames = [angleFrame(0, 170), angleFrame(700, 50), angleFrame(1800, 50), angleFrame(2000, 170), angleFrame(2100, 50), angleFrame(2800, 170)];
+    const first = frames.flatMap((f) => engine.push(f));
+    engine.reset();
+    const second = frames.flatMap((f) => engine.push(f));
+    expect(second).toEqual(first);
+    expect(first.some((e) => e.type === 'hold:start')).toBe(true);
+  });
+});

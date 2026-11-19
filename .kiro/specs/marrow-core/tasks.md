@@ -37,7 +37,7 @@ Each task leaves `npm run typecheck`, `npm test` and `npm run build` green at th
   - Tests: unit cases plus P11 to P14, P16, P17, with P13 and P14 noise bounded as in R10 and P14 using transition witnesses, not midpoints.
   - Keeps typecheck, test and build green. Requirements: R6, R6a, R6b.
 
-- [ ] 7. Engine: holds, form warnings, ROM sampling
+- [x] 7. Engine: holds, form warnings, ROM sampling
   - Extend the engine with `hold:start|tick|end`, `form:warning` (hysteresis in the rule's metric unit) and `rom:sample`. Add `advance(t)` (R6f) and the gap check at the start of `push`.
   - Tests: unit cases plus P18, P19, P22 and P23, and a check that P11 to P17 still pass.
   - Keeps typecheck, test and build green. Requirements: R6c to R6f.
